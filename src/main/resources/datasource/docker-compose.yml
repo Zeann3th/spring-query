@@ -1,0 +1,16 @@
+services:
+  mariadb:
+    image: mariadb:lts-ubi9
+    container_name: vdt_mariadb
+    environment:
+      MARIADB_ROOT_PASSWORD: 123123aA@
+      MARIADB_DATABASE: vdt_query
+      MARIADB_USER: longlh20
+      MARIADB_PASSWORD: 123123aA@
+    ports:
+      - "3306:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+
+volumes:
+  mariadb_data:
