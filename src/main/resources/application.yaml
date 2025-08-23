@@ -2,6 +2,17 @@ spring:
   application:
   name: query
 
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    consumer:
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+
   datasource:
     url: jdbc:mariadb://127.0.0.1:3306/vdt_query
     username: longlh20
@@ -18,3 +29,8 @@ spring:
 
 server:
   port: 7554
+
+app:
+  kafka:
+    topics:
+      schema-parse: schema-parse-topic

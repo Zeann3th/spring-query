@@ -1,4 +1,4 @@
-package vn.com.vds.vdt.query.common;
+package vn.com.vds.vdt.query.common.constants;
 
 @SuppressWarnings("all")
 public class ErrorCodes {

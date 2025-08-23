@@ -4,7 +4,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import vn.com.vds.vdt.query.common.ErrorCodes;
+import vn.com.vds.vdt.query.common.constants.ErrorCodes;
 import vn.com.vds.vdt.query.common.enums.DataType;
 import vn.com.vds.vdt.query.common.mappers.DataTypeMapper;
 import vn.com.vds.vdt.query.dto.ParseSchemaRequest;
