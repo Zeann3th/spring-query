@@ -1,0 +1,58 @@
+scalar Object
+
+type Query {
+    getEntities(filter: EntityFilterInput): EntityQueryResult!
+    getEntityById(entityId: ID!): DynamicEntityDto
+    getEntityByName(entityName: String!): DynamicEntityDto
+}
+
+type Mutation {
+    createEntity(input: CreateEntityInput!): DynamicEntityDto!
+    updateEntity(input: UpdateEntityInput!): DynamicEntityDto!
+    deleteEntity(entityId: ID!): Boolean!
+    addAttributeToEntity(entityId: ID!, attribute: AttributeDefinitionInput!): DynamicEntityDto!
+    removeAttributeFromEntity(entityId: ID!, attributeName: String!): DynamicEntityDto!
+}
+
+input CreateEntityInput {
+    entityName: String!
+    attributes: [AttributeDefinitionInput!]
+    values: Object
+}
+
+input UpdateEntityInput {
+    entityId: ID!
+    entityName: String
+    values: Object
+}
+
+input AttributeDefinitionInput {
+    name: String!
+    type: String!
+}
+
+input EntityFilterInput {
+    entityName: String
+    attributeFilters: Object
+    limit: Int
+    offset: Int
+}
+
+type DynamicEntityDto {
+    entityId: ID!
+    entityName: String!
+    attributes: [AttributeDto!]!
+    values: Object!
+}
+
+type AttributeDto {
+    attributeId: ID!
+    attributeName: String!
+    attributeType: String!
+}
+
+type EntityQueryResult {
+    entities: [DynamicEntityDto!]!
+    totalCount: Int!
+    hasNext: Boolean!
+}

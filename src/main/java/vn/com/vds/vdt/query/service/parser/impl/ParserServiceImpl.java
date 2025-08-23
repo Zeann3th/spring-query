@@ -5,7 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import vn.com.vds.vdt.query.common.constants.ErrorCodes;
-import vn.com.vds.vdt.query.dto.ParseSchemaRequest;
+import vn.com.vds.vdt.query.controller.dto.parser.ParseSchemaRequest;
 import vn.com.vds.vdt.query.exception.CommandException;
 import vn.com.vds.vdt.query.service.common.CommonService;
 import vn.com.vds.vdt.query.service.parser.ParserService;

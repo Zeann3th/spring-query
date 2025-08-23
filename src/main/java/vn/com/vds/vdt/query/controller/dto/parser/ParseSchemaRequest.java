@@ -1,4 +1,4 @@
-package vn.com.vds.vdt.query.dto;
+package vn.com.vds.vdt.query.controller.dto.parser;
 
 import lombok.*;
 

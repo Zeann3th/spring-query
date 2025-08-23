@@ -9,7 +9,10 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "attribute_values")
+@Table(
+        name = "attribute_values",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"entity_id", "attribute_id"})
+)
 public class ValueEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -27,6 +27,10 @@ spring:
       hibernate:
         format_sql: true
 
+  graphql:
+    graphiql:
+      enabled: true
+
 server:
   port: 7554
 

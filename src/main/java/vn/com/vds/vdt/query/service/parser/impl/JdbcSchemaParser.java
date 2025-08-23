@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 import vn.com.vds.vdt.query.common.constants.ErrorCodes;
 import vn.com.vds.vdt.query.common.enums.DataType;
 import vn.com.vds.vdt.query.common.mappers.DataTypeMapper;
-import vn.com.vds.vdt.query.dto.ParseSchemaRequest;
+import vn.com.vds.vdt.query.controller.dto.parser.ParseSchemaRequest;
 import vn.com.vds.vdt.query.entity.AttributeEntity;
 import vn.com.vds.vdt.query.entity.DynamicEntity;
 import vn.com.vds.vdt.query.exception.CommandException;
@@ -69,7 +69,7 @@ public class JdbcSchemaParser implements SchemaParser {
 
                 String mappedType = mapType(typeName);
 
-                AttributeEntity attr = attributeRepo.findByDynamicEntityAndAttributeName(entity, column)
+                AttributeEntity attr = attributeRepo.findByAttributeNameAndDynamicEntity(column, entity)
                         .orElseGet(() -> attributeRepo.save(AttributeEntity.builder()
                                 .attributeName(column)
                                 .attributeType(mappedType)
