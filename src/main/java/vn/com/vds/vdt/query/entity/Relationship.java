@@ -1,4 +1,4 @@
-package vn.com.vds.vdt.query.entity_2;
+package vn.com.vds.vdt.query.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -29,11 +29,11 @@ public class Relationship {
 
     @ManyToOne
     @JoinColumn(name = "from_entity_id", nullable = false)
-    private CommonEntity fromEntity;
+    private InstanceEntity fromEntity;
 
     @ManyToOne
     @JoinColumn(name = "to_entity_id", nullable = false)
-    private CommonEntity toEntity;
+    private InstanceEntity toEntity;
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "metadata", columnDefinition = "json")

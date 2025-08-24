@@ -4,29 +4,26 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@SuppressWarnings("all")
-@ToString(exclude = {"values", "dynamicEntity"})
+@ToString
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Entity
-@Table(name = "instances")
+@Table(name = "entities")
 public class InstanceEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "entity_id")
     @EqualsAndHashCode.Include
-    @Column(name = "instance_id")
-    private Long instanceId;
+    private Long entityId;
 
     @ManyToOne
-    @JoinColumn(name = "entity_id", nullable = false)
-    private DynamicEntity dynamicEntity;
+    @JoinColumn(name = "entity_type_id", nullable = false)
+    private EntityType entityType;
 
     @Column(name = "created_at")
     @Builder.Default
@@ -36,9 +33,12 @@ public class InstanceEntity {
     @Builder.Default
     private LocalDateTime updatedAt = LocalDateTime.now();
 
-    @OneToMany(mappedBy = "instanceEntity", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<ValueEntity> values = new ArrayList<>();
+    @PrePersist
+    public void prePersist() {
+        LocalDateTime now = LocalDateTime.now();
+        createdAt = now;
+        updatedAt = now;
+    }
 
     @PreUpdate
     public void preUpdate() {

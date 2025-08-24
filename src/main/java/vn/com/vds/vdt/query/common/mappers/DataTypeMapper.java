@@ -24,6 +24,6 @@ public class DataTypeMapper {
             return DataType.UUID.getValue();
         }
 
-        throw new IllegalArgumentException("Unsupported SQL type: " + sqlType);
+        return DataType.STRING.getValue();
     }
 }

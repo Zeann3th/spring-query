@@ -1,4 +1,4 @@
-package vn.com.vds.vdt.query.entity_2;
+package vn.com.vds.vdt.query.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -6,6 +6,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.Map;
 
 @Getter
@@ -26,7 +27,7 @@ public class AttributeValue {
 
     @ManyToOne
     @JoinColumn(name = "entity_id", nullable = false)
-    private CommonEntity entity;
+    private InstanceEntity entity;
 
     @ManyToOne
     @JoinColumn(name = "attribute_definition_id", nullable = false)
@@ -46,5 +47,5 @@ public class AttributeValue {
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "json_value", columnDefinition = "json")
-    private Map<String, String> jsonValue;
+    private Map<String, String> jsonValue = new HashMap<>();
 }

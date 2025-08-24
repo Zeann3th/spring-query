@@ -1,4 +1,4 @@
-package vn.com.vds.vdt.query.entity_2;
+package vn.com.vds.vdt.query.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
