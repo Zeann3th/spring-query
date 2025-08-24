@@ -1,37 +1,47 @@
 scalar Object
 
 type Query {
-    getEntities(filter: EntityFilterInput): EntityQueryResult!
+    getEntities(filter: FilterInput): EntityQueryResult!
     getEntityById(entityId: ID!): DynamicEntityDto
     getEntityByName(entityName: String!): DynamicEntityDto
+    getEntityInstances(entityName: String!, filter: FilterInput): InstanceQueryResult!
+    getEntityInstance(entityName: String!, instanceId: ID!): EntityInstanceDto
 }
 
 type Mutation {
     createEntity(input: CreateEntityInput!): DynamicEntityDto!
     updateEntity(input: UpdateEntityInput!): DynamicEntityDto!
     deleteEntity(entityId: ID!): Boolean!
-    addAttributeToEntity(entityId: ID!, attribute: AttributeDefinitionInput!): DynamicEntityDto!
+    addAttributeToEntity(entityId: ID!, attribute: AttributeInput!): DynamicEntityDto!
     removeAttributeFromEntity(entityId: ID!, attributeName: String!): DynamicEntityDto!
+
+    createEntityInstance(input: InstanceInput!): EntityInstanceDto!
+    updateEntityInstance(input: InstanceInput!): EntityInstanceDto!
+    deleteEntityInstance(entityName: String!, instanceId: ID!): Boolean!
 }
 
 input CreateEntityInput {
     entityName: String!
-    attributes: [AttributeDefinitionInput!]
-    values: Object
+    attributes: [AttributeInput!]
 }
 
 input UpdateEntityInput {
     entityId: ID!
     entityName: String
-    values: Object
 }
 
-input AttributeDefinitionInput {
+input AttributeInput {
     name: String!
     type: String!
 }
 
-input EntityFilterInput {
+input InstanceInput {
+    entityName: String!
+    instanceId: ID
+    values: Object!
+}
+
+input FilterInput {
     entityName: String
     attributeFilters: Object
     limit: Int
@@ -42,7 +52,6 @@ type DynamicEntityDto {
     entityId: ID!
     entityName: String!
     attributes: [AttributeDto!]!
-    values: Object!
 }
 
 type AttributeDto {
@@ -51,8 +60,22 @@ type AttributeDto {
     attributeType: String!
 }
 
+type EntityInstanceDto {
+    instanceId: ID!
+    entityName: String!
+    values: Object!
+    createdAt: String
+    updatedAt: String
+}
+
 type EntityQueryResult {
-    entities: [DynamicEntityDto!]!
+    items: [DynamicEntityDto!]!
+    totalCount: Int!
+    hasNext: Boolean!
+}
+
+type InstanceQueryResult {
+    items: [EntityInstanceDto!]!
     totalCount: Int!
     hasNext: Boolean!
 }

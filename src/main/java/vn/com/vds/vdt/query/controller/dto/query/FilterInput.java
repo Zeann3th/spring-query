@@ -5,13 +5,15 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
+import java.util.Map;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CreateEntityInput {
+public class FilterInput {
     private String entityName;
-    private List<AttributeInput> attributes;
+    private Map<String, Object> attributeFilters;
+    private Integer limit;
+    private Integer offset;
 }

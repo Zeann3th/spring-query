@@ -5,13 +5,16 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
+import java.util.Map;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CreateEntityInput {
+public class EntityInstanceDto {
+    private Long instanceId;
     private String entityName;
-    private List<AttributeInput> attributes;
+    private Map<String, Object> values;
+    private String createdAt;
+    private String updatedAt;
 }

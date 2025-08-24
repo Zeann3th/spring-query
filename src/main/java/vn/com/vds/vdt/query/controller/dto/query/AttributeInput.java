@@ -5,14 +5,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
-
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class EntityQueryResult {
-    private List<DynamicEntityDto> entities;
-    private Integer totalCount;
-    private Boolean hasNext;
+public class AttributeInput {
+    private String name;
+    private String type;
 }

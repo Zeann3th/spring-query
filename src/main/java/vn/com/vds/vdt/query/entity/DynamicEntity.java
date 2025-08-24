@@ -11,7 +11,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString(exclude = {"values", "attributes"})
+@ToString(exclude = {"attributes", "instances"})
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Entity
 @Table(name = "entities")
@@ -31,5 +31,5 @@ public class DynamicEntity {
 
     @OneToMany(mappedBy = "dynamicEntity", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    private List<ValueEntity> values = new ArrayList<>();
+    private List<InstanceEntity> instances = new ArrayList<>();
 }

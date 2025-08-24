@@ -1,29 +1,29 @@
 package vn.com.vds.vdt.query.service.query;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.com.vds.vdt.query.controller.dto.query.*;
-import vn.com.vds.vdt.query.entity.AttributeEntity;
-import vn.com.vds.vdt.query.entity.DynamicEntity;
-import vn.com.vds.vdt.query.entity.ValueEntity;
-import vn.com.vds.vdt.query.repository.AttributeRepository;
-import vn.com.vds.vdt.query.repository.DynamicEntityRepository;
-import vn.com.vds.vdt.query.repository.ValueRepository;
+import vn.com.vds.vdt.query.entity.*;
+import vn.com.vds.vdt.query.repository.*;
 
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 @SuppressWarnings("all")
 public class QueryService {
     private final DynamicEntityRepository dynamicEntityRepo;
     private final AttributeRepository attributeRepo;
+    private final InstanceRepository instanceRepo;
     private final ValueRepository valueRepo;
 
     @Transactional(readOnly = true)
-    public EntityQueryResult getEntities(EntityFilter filter) {
+    public QueryResult<DynamicEntityDto> getEntities(FilterInput filter) {
         List<DynamicEntity> entities;
         Integer totalCount = 0;
 
@@ -40,11 +40,6 @@ public class QueryService {
             totalCount = entities.size();
         }
 
-        if (filter.getAttributeFilters() != null && !filter.getAttributeFilters().isEmpty()) {
-            entities = filterEntitiesByAttributes(entities, filter.getAttributeFilters());
-            totalCount = entities.size();
-        }
-
         if (filter.getOffset() != null || filter.getLimit() != null) {
             int offset = filter.getOffset() != null ? filter.getOffset() : 0;
             int limit = filter.getLimit() != null ? filter.getLimit() : entities.size();
@@ -56,15 +51,15 @@ public class QueryService {
         }
 
         List<DynamicEntityDto> entityDtos = entities.stream()
-                .map(this::convertToDto)
+                .map(this::convertToEntityDto)
                 .collect(Collectors.toList());
 
         boolean hasNext = filter.getLimit() != null &&
                 filter.getOffset() != null &&
                 (filter.getOffset() + filter.getLimit()) < totalCount;
 
-        return EntityQueryResult.builder()
-                .entities(entityDtos)
+        return QueryResult.<DynamicEntityDto>builder()
+                .items(entityDtos)
                 .totalCount(totalCount)
                 .hasNext(hasNext)
                 .build();
@@ -73,44 +68,42 @@ public class QueryService {
     @Transactional(readOnly = true)
     public Optional<DynamicEntityDto> getEntityById(Long entityId) {
         return dynamicEntityRepo.findById(entityId)
-                .map(this::convertToDto);
+                .map(this::convertToEntityDto);
     }
 
     @Transactional(readOnly = true)
     public Optional<DynamicEntityDto> getEntityByName(String entityName) {
         return dynamicEntityRepo.findByEntityName(entityName)
-                .map(this::convertToDto);
+                .map(this::convertToEntityDto);
     }
 
     @Transactional
     public DynamicEntityDto createEntity(CreateEntityInput input) {
-        DynamicEntity entity = DynamicEntity.builder()
-                .entityName(input.getEntityName())
-                .attributes(new ArrayList<>())
-                .values(new ArrayList<>())
-                .build();
+        try {
+            DynamicEntity entity = DynamicEntity.builder()
+                    .entityName(input.getEntityName())
+                    .build();
 
-        entity = dynamicEntityRepo.save(entity);
+            entity = dynamicEntityRepo.save(entity);
 
-        if (input.getAttributes() != null) {
-            for (AttributeDefinition attrDef : input.getAttributes()) {
-                AttributeEntity attribute = AttributeEntity.builder()
-                        .attributeName(attrDef.getName())
-                        .attributeType(attrDef.getType())
-                        .dynamicEntity(entity)
-                        .values(new ArrayList<>())
-                        .build();
+            if (input.getAttributes() != null) {
+                for (AttributeInput attrDef : input.getAttributes()) {
+                    AttributeEntity attribute = AttributeEntity.builder()
+                            .attributeName(attrDef.getName())
+                            .attributeType(attrDef.getType())
+                            .dynamicEntity(entity)
+                            .build();
 
-                attribute = attributeRepo.save(attribute);
-                entity.getAttributes().add(attribute);
+                    attribute = attributeRepo.save(attribute);
+                    entity.getAttributes().add(attribute);
+                }
             }
-        }
 
-        if (input.getValues() != null) {
-            createOrUpdateValues(entity, input.getValues());
+            return convertToEntityDto(entity);
+        } catch (Exception e) {
+            log.error("Error creating entity", e);
+            throw e;
         }
-
-        return convertToDto(entity);
     }
 
     @Transactional
@@ -122,12 +115,8 @@ public class QueryService {
             entity.setEntityName(input.getEntityName());
         }
 
-        if (input.getValues() != null) {
-            createOrUpdateValues(entity, input.getValues());
-        }
-
         entity = dynamicEntityRepo.save(entity);
-        return convertToDto(entity);
+        return convertToEntityDto(entity);
     }
 
     @Transactional
@@ -141,7 +130,7 @@ public class QueryService {
     }
 
     @Transactional
-    public DynamicEntityDto addAttributeToEntity(Long entityId, AttributeDefinition attributeDefinition) {
+    public DynamicEntityDto addAttributeToEntity(Long entityId, AttributeInput attributeDefinition) {
         DynamicEntity entity = dynamicEntityRepo.findById(entityId)
                 .orElseThrow(() -> new RuntimeException("Entity not found with id: " + entityId));
 
@@ -156,13 +145,12 @@ public class QueryService {
                 .attributeName(attributeDefinition.getName())
                 .attributeType(attributeDefinition.getType())
                 .dynamicEntity(entity)
-                .values(new ArrayList<>())
                 .build();
 
         attribute = attributeRepo.save(attribute);
         entity.getAttributes().add(attribute);
 
-        return convertToDto(entity);
+        return convertToEntityDto(entity);
     }
 
     @Transactional
@@ -180,10 +168,114 @@ public class QueryService {
         entity.getAttributes().remove(attributeToRemove);
         attributeRepo.delete(attributeToRemove);
 
-        return convertToDto(entity);
+        return convertToEntityDto(entity);
     }
 
-    private void createOrUpdateValues(DynamicEntity entity, Map<String, Object> values) {
+    @Transactional(readOnly = true)
+    public QueryResult<EntityInstanceDto> getEntityInstances(String entityName, FilterInput filter) {
+        DynamicEntity entity = dynamicEntityRepo.findByEntityName(entityName)
+                .orElseThrow(() -> new RuntimeException("Entity not found: " + entityName));
+
+        List<InstanceEntity> instances = instanceRepo.findByDynamicEntity(entity);
+
+        if (filter != null && filter.getAttributeFilters() != null && !filter.getAttributeFilters().isEmpty()) {
+            instances = filterInstancesByAttributes(instances, filter.getAttributeFilters());
+        }
+
+        int totalCount = instances.size();
+
+        if (filter != null && (filter.getOffset() != null || filter.getLimit() != null)) {
+            int offset = filter.getOffset() != null ? filter.getOffset() : 0;
+            int limit = filter.getLimit() != null ? filter.getLimit() : instances.size();
+
+            instances = instances.stream()
+                    .skip(offset)
+                    .limit(limit)
+                    .collect(Collectors.toList());
+        }
+
+        List<EntityInstanceDto> instanceDtos = instances.stream()
+                .map(instance -> convertToInstanceDto(instance, entityName))
+                .collect(Collectors.toList());
+
+        boolean hasNext = false;
+        if (filter != null && filter.getLimit() != null && filter.getOffset() != null) {
+            hasNext = (filter.getOffset() + filter.getLimit()) < totalCount;
+        }
+
+        return QueryResult.<EntityInstanceDto>builder()
+                .items(instanceDtos)
+                .totalCount(totalCount)
+                .hasNext(hasNext)
+                .build();
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<EntityInstanceDto> getEntityInstance(String entityName, Long instanceId) {
+        DynamicEntity entity = dynamicEntityRepo.findByEntityName(entityName)
+                .orElseThrow(() -> new RuntimeException("Entity not found: " + entityName));
+
+        return instanceRepo.findByInstanceIdAndDynamicEntity(instanceId, entity)
+                .map(instance -> convertToInstanceDto(instance, entityName));
+    }
+
+    @Transactional
+    public EntityInstanceDto createEntityInstance(InstanceInput input) {
+        DynamicEntity entity = dynamicEntityRepo.findByEntityName(input.getEntityName())
+                .orElseThrow(() -> new RuntimeException("Entity not found: " + input.getEntityName()));
+
+        // Create new instance
+        InstanceEntity instance = InstanceEntity.builder()
+                .dynamicEntity(entity)
+                .build();
+        instance = instanceRepo.save(instance);
+
+        // Create values for the instance
+        if (input.getValues() != null) {
+            createInstanceValues(instance, input.getValues());
+        }
+
+        return convertToInstanceDto(instance, input.getEntityName());
+    }
+
+    @Transactional
+    public EntityInstanceDto updateEntityInstance(InstanceInput input) {
+        DynamicEntity entity = dynamicEntityRepo.findByEntityName(input.getEntityName())
+                .orElseThrow(() -> new RuntimeException("Entity not found: " + input.getEntityName()));
+
+        InstanceEntity instance = instanceRepo.findByInstanceIdAndDynamicEntity(input.getInstanceId(), entity)
+                .orElseThrow(() -> new RuntimeException("Instance not found: " + input.getInstanceId()));
+
+        // Delete existing values
+        valueRepo.deleteByInstanceEntity(instance);
+
+        // Force flush to ensure deletes are committed before inserts
+        valueRepo.flush();
+
+        if (input.getValues() != null) {
+            createInstanceValues(instance, input.getValues());
+        }
+
+        return convertToInstanceDto(instance, input.getEntityName());
+    }
+
+    @Transactional
+    public Boolean deleteEntityInstance(String entityName, Long instanceId) {
+        DynamicEntity entity = dynamicEntityRepo.findByEntityName(entityName)
+                .orElseThrow(() -> new RuntimeException("Entity not found: " + entityName));
+
+        Optional<InstanceEntity> instanceOpt = instanceRepo.findByInstanceIdAndDynamicEntity(instanceId, entity);
+        if (instanceOpt.isEmpty()) {
+            return false;
+        }
+
+        instanceRepo.delete(instanceOpt.get());
+        return true;
+    }
+
+    private void createInstanceValues(InstanceEntity instance, Map<String, Object> values) {
+        DynamicEntity entity = instance.getDynamicEntity();
+
         for (Map.Entry<String, Object> entry : values.entrySet()) {
             String attributeName = entry.getKey();
             Object value = entry.getValue();
@@ -193,43 +285,48 @@ public class QueryService {
                     .findFirst()
                     .orElseThrow(() -> new RuntimeException("Attribute not found: " + attributeName));
 
-            ValueEntity valueEntity = entity.getValues().stream()
-                    .filter(val -> val.getAttributeEntity().getAttributeId().equals(attribute.getAttributeId()))
-                    .findFirst()
-                    .orElse(null);
+            // Check if value already exists to prevent duplicates
+            Optional<ValueEntity> existingValue = valueRepo.findByInstanceEntityAndAttributeEntity(instance, attribute);
 
-            if (valueEntity == null) {
-                valueEntity = ValueEntity.builder()
-                        .dynamicEntity(entity)
+            if (existingValue.isPresent()) {
+                // Update existing value instead of creating new one
+                ValueEntity valueEntity = existingValue.get();
+                valueEntity.setValue(value != null ? value.toString() : null);
+                valueRepo.save(valueEntity);
+            } else {
+                // Create new value
+                ValueEntity valueEntity = ValueEntity.builder()
+                        .instanceEntity(instance)
                         .attributeEntity(attribute)
+                        .value(value != null ? value.toString() : null)
                         .build();
-                entity.getValues().add(valueEntity);
-                attribute.getValues().add(valueEntity);
-            }
 
-            valueEntity.setValue(value != null ? value.toString() : null);
-            valueRepo.save(valueEntity);
+                valueRepo.save(valueEntity);
+            }
         }
     }
 
-    private List<DynamicEntity> filterEntitiesByAttributes(List<DynamicEntity> entities,
-                                                           Map<String, Object> attributeFilters) {
-        return entities.stream()
-                .filter(entity -> matchesAttributeFilters(entity, attributeFilters))
+    private List<InstanceEntity> filterInstancesByAttributes(List<InstanceEntity> instances,
+                                                             Map<String, Object> attributeFilters) {
+        return instances.stream()
+                .filter(instance -> matchesAttributeFilters(instance, attributeFilters))
                 .collect(Collectors.toList());
     }
 
-    private boolean matchesAttributeFilters(DynamicEntity entity, Map<String, Object> attributeFilters) {
+    private boolean matchesAttributeFilters(InstanceEntity instance, Map<String, Object> attributeFilters) {
         for (Map.Entry<String, Object> filter : attributeFilters.entrySet()) {
             String attributeName = filter.getKey();
             Object filterValue = filter.getValue();
 
-            boolean hasMatchingValue = entity.getValues().stream()
-                    .anyMatch(valueEntity ->
-                            valueEntity.getAttributeEntity().getAttributeName().equals(attributeName) &&
-                                    matchesFilterCriteria(valueEntity.getValue(), filterValue));
+            Optional<ValueEntity> valueOpt = instance.getValues().stream()
+                    .filter(val -> val.getAttributeEntity().getAttributeName().equals(attributeName))
+                    .findFirst();
 
-            if (!hasMatchingValue) {
+            if (valueOpt.isEmpty()) {
+                return false;
+            }
+
+            if (!matchesFilterCriteria(valueOpt.get().getValue(), filterValue)) {
                 return false;
             }
         }
@@ -259,82 +356,30 @@ public class QueryService {
                             return false;
                         }
                         break;
-
-                    case "startswith":
-                        if (!actualValue.toLowerCase().startsWith(operationValue.toString().toLowerCase())) {
-                            return false;
-                        }
-                        break;
-
-                    case "endswith":
-                        if (!actualValue.toLowerCase().endsWith(operationValue.toString().toLowerCase())) {
-                            return false;
-                        }
-                        break;
-
                     case "eq":
                     case "equals":
                         if (!Objects.equals(actualValue, operationValue.toString())) {
                             return false;
                         }
                         break;
-
-                    case "ne":
-                    case "notequals":
-                        if (Objects.equals(actualValue, operationValue.toString())) {
-                            return false;
-                        }
-                        break;
-
                     case "gt":
-                    case "greaterthan":
                         if (!compareNumeric(actualValue, operationValue, ">")) {
                             return false;
                         }
                         break;
-
-                    case "gte":
-                    case "greaterthanorequal":
-                        if (!compareNumeric(actualValue, operationValue, ">=")) {
-                            return false;
-                        }
-                        break;
-
                     case "lt":
-                    case "lessthan":
                         if (!compareNumeric(actualValue, operationValue, "<")) {
                             return false;
                         }
                         break;
-
-                    case "lte":
-                    case "lessthanorequal":
-                        if (!compareNumeric(actualValue, operationValue, "<=")) {
-                            return false;
-                        }
-                        break;
-
                     case "in":
                         if (operationValue instanceof List) {
                             List<?> values = (List<?>) operationValue;
-                            if (!values.contains(actualValue)) {
+                            if (!values.stream().anyMatch(v -> Objects.equals(actualValue, v.toString()))) {
                                 return false;
                             }
                         }
                         break;
-
-                    case "between":
-                        if (operationValue instanceof List) {
-                            List<?> range = (List<?>) operationValue;
-                            if (range.size() == 2) {
-                                if (!compareNumeric(actualValue, range.get(0), ">=") ||
-                                        !compareNumeric(actualValue, range.get(1), "<=")) {
-                                    return false;
-                                }
-                            }
-                        }
-                        break;
-
                     default:
                         if (!Objects.equals(actualValue, operationValue.toString())) {
                             return false;
@@ -366,12 +411,11 @@ public class QueryService {
                     return false;
             }
         } catch (NumberFormatException e) {
-            // If not numeric, fall back to string comparison
             return actualValue.compareTo(compareValue.toString()) > 0;
         }
     }
 
-    private DynamicEntityDto convertToDto(DynamicEntity entity) {
+    private DynamicEntityDto convertToEntityDto(DynamicEntity entity) {
         List<AttributeDto> attributeDtos = entity.getAttributes().stream()
                 .map(attr -> AttributeDto.builder()
                         .attributeId(attr.getAttributeId())
@@ -380,18 +424,29 @@ public class QueryService {
                         .build())
                 .collect(Collectors.toList());
 
-        Map<String, Object> values = entity.getValues().stream()
+        return DynamicEntityDto.builder()
+                .entityId(entity.getEntityId())
+                .entityName(entity.getEntityName())
+                .attributes(attributeDtos)
+                .build();
+    }
+
+    private EntityInstanceDto convertToInstanceDto(InstanceEntity instance, String entityName) {
+        Map<String, Object> values = instance.getValues().stream()
                 .collect(Collectors.toMap(
                         val -> val.getAttributeEntity().getAttributeName(),
                         val -> convertValueBasedOnType(val.getValue(), val.getAttributeEntity().getAttributeType()),
                         (existing, replacement) -> replacement
                 ));
 
-        return DynamicEntityDto.builder()
-                .entityId(entity.getEntityId())
-                .entityName(entity.getEntityName())
-                .attributes(attributeDtos)
+        return EntityInstanceDto.builder()
+                .instanceId(instance.getInstanceId())
+                .entityName(entityName)
                 .values(values)
+                .createdAt(instance.getCreatedAt() != null ?
+                        instance.getCreatedAt().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) : null)
+                .updatedAt(instance.getUpdatedAt() != null ?
+                        instance.getUpdatedAt().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) : null)
                 .build();
     }
 

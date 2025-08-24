@@ -5,11 +5,14 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AttributeDefinition {
-    private String name;
-    private String type;
+public class QueryResult<T> {
+    private List<T> items;
+    private Integer totalCount;
+    private Boolean hasNext;
 }

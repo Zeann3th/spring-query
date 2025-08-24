@@ -11,9 +11,8 @@ import java.util.Map;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class EntityFilter {
+public class InstanceInput {
     private String entityName;
-    private Map<String, Object> attributeFilters;
-    private Integer limit;
-    private Integer offset;
+    private Long instanceId;
+    private Map<String, Object> values;
 }

@@ -17,9 +17,9 @@ public class QueryController {
     private final QueryService queryService;
 
     @QueryMapping
-    public EntityQueryResult getEntities(@Argument EntityFilter filter) {
+    public QueryResult<DynamicEntityDto> getEntities(@Argument FilterInput filter) {
         if (filter == null) {
-            filter = EntityFilter.builder().build();
+            filter = FilterInput.builder().build();
         }
         return queryService.getEntities(filter);
     }
@@ -32,6 +32,18 @@ public class QueryController {
     @QueryMapping
     public Optional<DynamicEntityDto> getEntityByName(@Argument String entityName) {
         return queryService.getEntityByName(entityName);
+    }
+
+    @QueryMapping
+    public QueryResult<EntityInstanceDto> getEntityInstances(@Argument String entityName,
+                                                             @Argument FilterInput filter) {
+        return queryService.getEntityInstances(entityName, filter);
+    }
+
+    @QueryMapping
+    public Optional<EntityInstanceDto> getEntityInstance(@Argument String entityName,
+                                                         @Argument Long instanceId) {
+        return queryService.getEntityInstance(entityName, instanceId);
     }
 
     @MutationMapping
@@ -51,7 +63,7 @@ public class QueryController {
 
     @MutationMapping
     public DynamicEntityDto addAttributeToEntity(@Argument Long entityId,
-                                                 @Argument AttributeDefinition attribute) {
+                                                 @Argument AttributeInput attribute) {
         return queryService.addAttributeToEntity(entityId, attribute);
     }
 
@@ -59,5 +71,20 @@ public class QueryController {
     public DynamicEntityDto removeAttributeFromEntity(@Argument Long entityId,
                                                       @Argument String attributeName) {
         return queryService.removeAttributeFromEntity(entityId, attributeName);
+    }
+
+    @MutationMapping
+    public EntityInstanceDto createEntityInstance(@Argument InstanceInput input) {
+        return queryService.createEntityInstance(input);
+    }
+
+    @MutationMapping
+    public EntityInstanceDto updateEntityInstance(@Argument InstanceInput input) {
+        return queryService.updateEntityInstance(input);
+    }
+
+    @MutationMapping
+    public Boolean deleteEntityInstance(@Argument String entityName, @Argument Long instanceId) {
+        return queryService.deleteEntityInstance(entityName, instanceId);
     }
 }
