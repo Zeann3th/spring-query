@@ -9,10 +9,10 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>vn.com.vds.vdt</groupId>
-	<artifactId>query</artifactId>
+	<artifactId>service-builder</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>query</name>
-	<description>Dynamic query builder</description>
+	<name>service-builder</name>
+	<description>Dynamic service builder</description>
 	<url/>
 	<licenses>
 		<license/>
