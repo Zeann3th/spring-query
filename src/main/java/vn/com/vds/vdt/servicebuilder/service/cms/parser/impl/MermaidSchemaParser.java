@@ -6,7 +6,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-import vn.com.vds.vdt.servicebuilder.common.Utils;
 import vn.com.vds.vdt.servicebuilder.common.enums.DataType;
 import vn.com.vds.vdt.servicebuilder.common.enums.RelationshipCardinality;
 import vn.com.vds.vdt.servicebuilder.controller.dto.parser.ParseSchemaRequest;
@@ -25,6 +24,7 @@ import java.util.regex.Pattern;
 @Component
 @RequiredArgsConstructor
 @Slf4j
+@SuppressWarnings("all")
 public class MermaidSchemaParser implements SchemaParser {
 
     private final EntityTypeRepository entityTypeRepo;
@@ -57,7 +57,7 @@ public class MermaidSchemaParser implements SchemaParser {
                 EntityType entity = entityTypeRepo.findByName(entityName)
                         .orElseGet(() -> entityTypeRepo.save(EntityType.builder()
                                 .name(entityName)
-                                .displayName(Utils.capitalize(entityName))
+                                .displayName(ParserUtils.capitalize(entityName))
                                 .isActive(true)
                                 .schemaVersion(1L)
                                 .build()
@@ -69,7 +69,7 @@ public class MermaidSchemaParser implements SchemaParser {
                             .orElseGet(() -> AttributeDefinition.builder()
                                     .entityType(entity)
                                     .name(attr.getName())
-                                    .displayName(Utils.capitalize(attr.getName()))
+                                    .displayName(ParserUtils.capitalize(attr.getName()))
                                     .dataType(attr.getType())
                                     .isRequired(false)
                                     .validationRules(new HashMap<>())
@@ -112,7 +112,7 @@ public class MermaidSchemaParser implements SchemaParser {
                 RelationshipCardinality.reverse(relationType).getValue() :
                 relationType.getValue();
 
-        String relationshipName = Utils.generateRelationshipName(fromEntity, toEntity, relation.getDescription(), isReverse);
+        String relationshipName = ParserUtils.generateRelationshipName(fromEntity, toEntity, relation.getDescription(), isReverse);
 
         RelationshipType relationship = relationshipTypeRepo
                 .findByFromEntityTypeAndToEntityType(fromEntity, toEntity)

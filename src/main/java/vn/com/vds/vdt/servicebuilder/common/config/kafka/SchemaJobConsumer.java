@@ -1,4 +1,4 @@
-package vn.com.vds.vdt.servicebuilder.config.kafka;
+package vn.com.vds.vdt.servicebuilder.common.config.kafka;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

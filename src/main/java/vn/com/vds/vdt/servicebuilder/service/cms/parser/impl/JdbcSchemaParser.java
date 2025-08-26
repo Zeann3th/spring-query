@@ -4,10 +4,9 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import vn.com.vds.vdt.servicebuilder.common.Utils;
 import vn.com.vds.vdt.servicebuilder.common.constants.ErrorCodes;
+import vn.com.vds.vdt.servicebuilder.common.enums.DataType;
 import vn.com.vds.vdt.servicebuilder.common.enums.RelationshipCardinality;
-import vn.com.vds.vdt.servicebuilder.common.mappers.DataTypeMapper;
 import vn.com.vds.vdt.servicebuilder.controller.dto.parser.ParseSchemaRequest;
 import vn.com.vds.vdt.servicebuilder.entity.AttributeDefinition;
 import vn.com.vds.vdt.servicebuilder.entity.EntityType;
@@ -81,7 +80,7 @@ public class JdbcSchemaParser implements SchemaParser {
                 .orElseGet(() -> entityTypeRepo.save(
                         EntityType.builder()
                                 .name(tableName)
-                                .displayName(Utils.capitalize(tableName))
+                                .displayName(ParserUtils.capitalize(tableName))
                                 .isActive(true)
                                 .schemaVersion(1L)
                                 .build()
@@ -97,14 +96,14 @@ public class JdbcSchemaParser implements SchemaParser {
                 String defaultValue = columns.getString("COLUMN_DEF");
                 int columnSize = columns.getInt("COLUMN_SIZE");
                 int decimalDigits = columns.getInt("DECIMAL_DIGITS");
-                String mappedDataType = DataTypeMapper.map(sqlTypeName);
+                String mappedDataType = mapSQLType(sqlTypeName);
                 boolean isRequired = (nullable == DatabaseMetaData.columnNoNulls);
 
                 AttributeDefinition attr = attributeDefinitionRepo.findByNameAndEntityType(columnName, entityType)
                         .orElseGet(() -> AttributeDefinition.builder()
                                 .entityType(entityType)
                                 .name(columnName)
-                                .displayName(Utils.capitalize(columnName))
+                                .displayName(ParserUtils.capitalize(columnName))
                                 .dataType(mappedDataType)
                                 .isRequired(isRequired)
                                 .defaultValue(defaultValue)
@@ -158,7 +157,7 @@ public class JdbcSchemaParser implements SchemaParser {
     private void createOrUpdateRelationship(EntityType fromEntity, EntityType toEntity,
                                             String fkName, RelationshipCardinality cardinality,
                                             boolean isReverse) {
-        String relationshipName = Utils.generateRelationshipName(fromEntity, toEntity, fkName, isReverse);
+        String relationshipName = ParserUtils.generateRelationshipName(fromEntity, toEntity, fkName, isReverse);
 
         RelationshipType relationship = relationshipTypeRepo
                 .findByFromEntityTypeAndToEntityType(fromEntity, toEntity)
@@ -208,5 +207,28 @@ public class JdbcSchemaParser implements SchemaParser {
             }
         }
         return validationRules;
+    }
+
+    private String mapSQLType(String sqlType) {
+        String normalized = sqlType.toUpperCase();
+
+        if (normalized.contains("CHAR") || normalized.contains("TEXT") || normalized.contains("CLOB")) {
+            return DataType.STRING.getValue();
+        } else if (normalized.contains("INT")) {
+            return DataType.INTEGER.getValue();
+        } else if (normalized.contains("BIGINT") || normalized.contains("LONG")) {
+            return DataType.LONG.getValue();
+        } else if (normalized.contains("DOUBLE") || normalized.contains("FLOAT")
+                || normalized.contains("DECIMAL") || normalized.contains("NUMERIC")) {
+            return DataType.DOUBLE.getValue();
+        } else if (normalized.contains("BOOL")) {
+            return DataType.BOOLEAN.getValue();
+        } else if (normalized.contains("DATE") || normalized.contains("TIME")) {
+            return normalized.contains("TIME") ? DataType.DATETIME.getValue() : DataType.DATE.getValue();
+        } else if (normalized.contains("UUID")) {
+            return DataType.UUID.getValue();
+        }
+
+        return DataType.STRING.getValue();
     }
 }

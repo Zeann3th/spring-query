@@ -1,10 +1,10 @@
-package vn.com.vds.vdt.servicebuilder.common;
+package vn.com.vds.vdt.servicebuilder.service.cms.parser.impl;
 
 import vn.com.vds.vdt.servicebuilder.entity.EntityType;
 
-public class Utils {
+public class ParserUtils {
     public static String generateRelationshipName(EntityType fromEntity, EntityType toEntity,
-                                            String fkName, boolean isReverse) {
+                                                  String fkName, boolean isReverse) {
         String baseName = (fkName != null && !fkName.trim().isEmpty()) ?
                 fkName :
                 fromEntity.getName() + "_to_" + toEntity.getName();
