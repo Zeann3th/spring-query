@@ -9,10 +9,10 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>vn.com.vds.vdt</groupId>
-	<artifactId>query</artifactId>
+	<artifactId>service-builder</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>query</name>
-	<description>Dynamic query builder</description>
+	<name>service-builder</name>
+	<description>Dynamic service builder</description>
 	<url/>
 	<licenses>
 		<license/>
@@ -33,11 +33,6 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-jpa</artifactId>
-		</dependency>
-
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-graphql</artifactId>
 		</dependency>
 
 		<dependency>
@@ -69,27 +64,38 @@
 			<scope>test</scope>
 		</dependency>
 
-		<dependency>
-			<groupId>org.springframework.graphql</groupId>
-			<artifactId>spring-graphql-test</artifactId>
-			<scope>test</scope>
-		</dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.springframework.boot</groupId>-->
+<!--            <artifactId>spring-boot-starter-graphql</artifactId>-->
+<!--        </dependency>-->
+<!--        -->
+<!--		<dependency>-->
+<!--			<groupId>org.springframework.graphql</groupId>-->
+<!--			<artifactId>spring-graphql-test</artifactId>-->
+<!--			<scope>test</scope>-->
+<!--		</dependency>-->
 
-        <dependency>
-            <groupId>com.graphql-java-kickstart</groupId>
-            <artifactId>playground-spring-boot-starter</artifactId>
-            <version>11.1.0</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>com.graphql-java-kickstart</groupId>-->
+<!--            <artifactId>playground-spring-boot-starter</artifactId>-->
+<!--            <version>11.1.0</version>-->
+<!--        </dependency>-->
 
-        <dependency>
-            <groupId>com.graphql-java</groupId>
-            <artifactId>graphql-java-extended-scalars</artifactId>
-            <version>24.0</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>com.graphql-java</groupId>-->
+<!--            <artifactId>graphql-java-extended-scalars</artifactId>-->
+<!--            <version>24.0</version>-->
+<!--        </dependency>-->
 
         <dependency>
             <groupId>org.springframework.kafka</groupId>
             <artifactId>spring-kafka</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.camunda</groupId>
+            <artifactId>spring-boot-starter-camunda-sdk</artifactId>
+            <version>8.8.0-alpha5</version>
         </dependency>
 
 	</dependencies>
