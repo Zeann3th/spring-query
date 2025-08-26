@@ -3,6 +3,8 @@ package vn.com.vds.vdt.servicebuilder.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.List;
+
 @Getter
 @Setter
 @Builder
@@ -30,4 +32,10 @@ public class EntityType {
 
     @Column(name = "schema_version")
     private Long schemaVersion;
+
+    @OneToMany(mappedBy = "entityType", fetch = FetchType.LAZY)
+    private List<AttributeDefinition> attributeDefinitions;
+
+    @OneToMany(mappedBy = "fromEntityType", fetch = FetchType.LAZY)
+    private List<RelationshipType> relationshipTypes;
 }

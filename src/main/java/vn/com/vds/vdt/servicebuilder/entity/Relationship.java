@@ -5,6 +5,7 @@ import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @Getter
@@ -36,6 +37,6 @@ public class Relationship {
     private InstanceEntity toEntity;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "metadata", columnDefinition = "json")
-    private Map<String, String> metadata;
+    @Column(name = "metadata")
+    private Map<String, String> metadata = new HashMap<>();
 }

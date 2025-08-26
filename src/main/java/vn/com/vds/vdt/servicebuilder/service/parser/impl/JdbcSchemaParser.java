@@ -8,7 +8,7 @@ import vn.com.vds.vdt.servicebuilder.common.Utils;
 import vn.com.vds.vdt.servicebuilder.common.constants.ErrorCodes;
 import vn.com.vds.vdt.servicebuilder.common.enums.RelationshipCardinality;
 import vn.com.vds.vdt.servicebuilder.common.mappers.DataTypeMapper;
-import vn.com.vds.vdt.servicebuilder.controller.dto.parser.ParseSchemaRequest;
+import vn.com.vds.vdt.servicebuilder.dto.parser.ParseSchemaRequest;
 import vn.com.vds.vdt.servicebuilder.entity.AttributeDefinition;
 import vn.com.vds.vdt.servicebuilder.entity.EntityType;
 import vn.com.vds.vdt.servicebuilder.entity.RelationshipType;

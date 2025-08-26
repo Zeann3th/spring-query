@@ -1,4 +1,4 @@
-package vn.com.vds.vdt.servicebuilder.controller.dto.parser;
+package vn.com.vds.vdt.servicebuilder.dto.parser;
 
 import lombok.*;
 

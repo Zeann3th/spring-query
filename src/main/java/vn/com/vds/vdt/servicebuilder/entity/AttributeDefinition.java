@@ -44,6 +44,6 @@ public class AttributeDefinition {
     private String defaultValue;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "validation_rules", columnDefinition = "json")
+    @Column(name = "validation_rules")
     private Map<String, String> validationRules = new HashMap<>();
 }
