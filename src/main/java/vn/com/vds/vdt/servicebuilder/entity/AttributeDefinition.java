@@ -43,6 +43,7 @@ public class AttributeDefinition {
     @Column(name = "default_value")
     private String defaultValue;
 
+    @Builder.Default
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "validation_rules")
     private Map<String, String> validationRules = new HashMap<>();
