@@ -30,11 +30,11 @@ public class Relationship {
 
     @ManyToOne
     @JoinColumn(name = "from_entity_id", nullable = false)
-    private InstanceEntity fromEntity;
+    private Instance fromEntity;
 
     @ManyToOne
     @JoinColumn(name = "to_entity_id", nullable = false)
-    private InstanceEntity toEntity;
+    private Instance toEntity;
 
     @Builder.Default
     @JdbcTypeCode(SqlTypes.JSON)
