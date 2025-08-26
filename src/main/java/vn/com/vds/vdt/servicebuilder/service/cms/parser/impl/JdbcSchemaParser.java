@@ -1,4 +1,4 @@
-package vn.com.vds.vdt.servicebuilder.service.parser.impl;
+package vn.com.vds.vdt.servicebuilder.service.cms.parser.impl;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -8,7 +8,7 @@ import vn.com.vds.vdt.servicebuilder.common.Utils;
 import vn.com.vds.vdt.servicebuilder.common.constants.ErrorCodes;
 import vn.com.vds.vdt.servicebuilder.common.enums.RelationshipCardinality;
 import vn.com.vds.vdt.servicebuilder.common.mappers.DataTypeMapper;
-import vn.com.vds.vdt.servicebuilder.dto.parser.ParseSchemaRequest;
+import vn.com.vds.vdt.servicebuilder.controller.dto.parser.ParseSchemaRequest;
 import vn.com.vds.vdt.servicebuilder.entity.AttributeDefinition;
 import vn.com.vds.vdt.servicebuilder.entity.EntityType;
 import vn.com.vds.vdt.servicebuilder.entity.RelationshipType;
@@ -16,7 +16,7 @@ import vn.com.vds.vdt.servicebuilder.exception.CommandException;
 import vn.com.vds.vdt.servicebuilder.repository.AttributeDefinitionRepository;
 import vn.com.vds.vdt.servicebuilder.repository.EntityTypeRepository;
 import vn.com.vds.vdt.servicebuilder.repository.RelationshipTypeRepository;
-import vn.com.vds.vdt.servicebuilder.service.parser.SchemaParser;
+import vn.com.vds.vdt.servicebuilder.service.cms.parser.SchemaParser;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;

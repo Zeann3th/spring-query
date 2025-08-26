@@ -1,6 +1,6 @@
 spring:
   application:
-  name: query
+  name: Service Builder
 
   kafka:
     bootstrap-servers: localhost:9092
@@ -39,3 +39,13 @@ app:
   kafka:
     topics:
       schema-parse: schema-parse-topic
+
+camunda:
+    client:
+        mode: self-managed
+        grpc-address: http://127.0.0.1:26500
+        rest-address: http://127.0.0.1:8080
+
+logging:
+  level:
+    io.camunda.client.impl.CamundaCallCredentials: ERROR

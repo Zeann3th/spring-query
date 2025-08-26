@@ -1,7 +1,7 @@
-package vn.com.vds.vdt.servicebuilder.service.parser.impl;
+package vn.com.vds.vdt.servicebuilder.service.cms.parser.impl;
 
 import org.springframework.stereotype.Component;
-import vn.com.vds.vdt.servicebuilder.service.parser.SchemaParser;
+import vn.com.vds.vdt.servicebuilder.service.cms.parser.SchemaParser;
 
 import java.util.HashMap;
 import java.util.List;

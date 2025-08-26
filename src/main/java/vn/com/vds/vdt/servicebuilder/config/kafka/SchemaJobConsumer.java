@@ -1,4 +1,4 @@
-package vn.com.vds.vdt.servicebuilder.service.kafka.consumer;
+package vn.com.vds.vdt.servicebuilder.config.kafka;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -6,8 +6,8 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Service;
-import vn.com.vds.vdt.servicebuilder.dto.parser.ParseSchemaRequest;
-import vn.com.vds.vdt.servicebuilder.service.parser.impl.SchemaParserFactory;
+import vn.com.vds.vdt.servicebuilder.controller.dto.parser.ParseSchemaRequest;
+import vn.com.vds.vdt.servicebuilder.service.cms.parser.impl.SchemaParserFactory;
 
 @Slf4j
 @Service

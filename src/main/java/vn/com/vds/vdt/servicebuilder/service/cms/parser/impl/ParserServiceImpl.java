@@ -1,14 +1,14 @@
-package vn.com.vds.vdt.servicebuilder.service.parser.impl;
+package vn.com.vds.vdt.servicebuilder.service.cms.parser.impl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import vn.com.vds.vdt.servicebuilder.common.constants.ErrorCodes;
-import vn.com.vds.vdt.servicebuilder.dto.parser.ParseSchemaRequest;
+import vn.com.vds.vdt.servicebuilder.controller.dto.parser.ParseSchemaRequest;
 import vn.com.vds.vdt.servicebuilder.exception.CommandException;
 import vn.com.vds.vdt.servicebuilder.service.common.CommonService;
-import vn.com.vds.vdt.servicebuilder.service.parser.ParserService;
+import vn.com.vds.vdt.servicebuilder.service.cms.parser.ParserService;
 
 import java.util.UUID;
 
