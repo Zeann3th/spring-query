@@ -27,7 +27,7 @@ public class AttributeValue {
 
     @ManyToOne
     @JoinColumn(name = "entity_id", nullable = false)
-    private InstanceEntity entity;
+    private Instance entity;
 
     @ManyToOne
     @JoinColumn(name = "attribute_definition_id", nullable = false)
