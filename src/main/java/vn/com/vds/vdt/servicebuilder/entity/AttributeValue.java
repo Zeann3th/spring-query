@@ -45,6 +45,7 @@ public class AttributeValue {
     @Column(name = "boolean_value")
     private Boolean booleanValue;
 
+    @Builder.Default
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "json_value")
     private Map<String, String> jsonValue = new HashMap<>();

@@ -36,6 +36,7 @@ public class Relationship {
     @JoinColumn(name = "to_entity_id", nullable = false)
     private InstanceEntity toEntity;
 
+    @Builder.Default
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "metadata")
     private Map<String, String> metadata = new HashMap<>();
