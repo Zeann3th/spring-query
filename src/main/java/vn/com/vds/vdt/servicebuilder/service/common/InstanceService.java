@@ -5,6 +5,9 @@ import vn.com.vds.vdt.servicebuilder.entity.Instance;
 import java.util.Map;
 
 public interface InstanceService {
+
+    Instance getInstance(Long entityId);
+
     Instance createInstance(String entityTypeName, Map<String, Object> attributes);
 
     Instance updateInstance(Long entityId, Map<String, Object> attributes);

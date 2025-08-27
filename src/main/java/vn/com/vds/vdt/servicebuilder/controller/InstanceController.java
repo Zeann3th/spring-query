@@ -17,6 +17,12 @@ public class InstanceController {
 
     private final InstanceService instanceService;
 
+    @GetMapping("/{id}")
+    public Instance get(@PathVariable("id") Long id) {
+        Instance instance = instanceService.getInstance(id);
+        return instance;
+    }
+
     @PostMapping
     public ResponseEntity<InstanceResponse> create(@RequestBody InstanceCreateRequest request) {
         Instance saved = instanceService.createInstance(request.getEntityType(), request.getAttributes());

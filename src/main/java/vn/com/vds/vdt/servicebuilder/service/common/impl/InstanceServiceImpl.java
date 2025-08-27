@@ -23,6 +23,13 @@ public class InstanceServiceImpl implements InstanceService {
 
     @Transactional
     @Override
+    public Instance getInstance(Long entityId) {
+        return instanceRepository.findById(entityId)
+                .orElseThrow(() -> new IllegalArgumentException("Instance not found: " + entityId));
+    }
+
+    @Transactional
+    @Override
     public Instance createInstance(String entityTypeName, Map<String, Object> attributes) {
         EntityType entityType = entityTypeRepository.findByName(entityTypeName.toLowerCase())
                 .orElseThrow(() -> new IllegalArgumentException("Unknown entity type: " + entityTypeName));
@@ -110,4 +117,5 @@ public class InstanceServiceImpl implements InstanceService {
             return dt;
         return LocalDateTime.parse(String.valueOf(raw));
     }
+
 }
