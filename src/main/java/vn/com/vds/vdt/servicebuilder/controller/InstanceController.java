@@ -1,38 +1,64 @@
 package vn.com.vds.vdt.servicebuilder.controller;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
-import vn.com.vds.vdt.servicebuilder.controller.dto.instance.InstanceCreateRequest;
-import vn.com.vds.vdt.servicebuilder.controller.dto.instance.InstanceResponse;
-import vn.com.vds.vdt.servicebuilder.controller.dto.instance.InstanceUpdateRequest;
+import vn.com.vds.vdt.servicebuilder.common.base.ResponseWrapper;
+import vn.com.vds.vdt.servicebuilder.controller.dto.instance.InstanceRequest;
 import vn.com.vds.vdt.servicebuilder.entity.Instance;
 import vn.com.vds.vdt.servicebuilder.service.common.InstanceService;
 
+import java.util.Map;
+
 @RestController
-@RequestMapping("/api/v1/instances")
+@RequestMapping("/api/v1/entities/{entityName}")
 @RequiredArgsConstructor
+@ResponseWrapper
 @SuppressWarnings("all")
 public class InstanceController {
 
     private final InstanceService instanceService;
 
+    @GetMapping
+    public Page<Instance> getInstances(
+            @PathVariable("entityName") String entityName,
+            Pageable pageable
+    ) {
+        return instanceService.getInstances(entityName, pageable);
+    }
+
     @GetMapping("/{id}")
-    public Instance get(@PathVariable("id") Long id) {
-        Instance instance = instanceService.getInstance(id);
-        return instance;
+    public Instance getInstanceById(
+            @PathVariable("entityName") String entityName,
+            @PathVariable("id") Long id
+    ) {
+        return instanceService.getInstanceById(id);
     }
 
     @PostMapping
-    public ResponseEntity<InstanceResponse> create(@RequestBody InstanceCreateRequest request) {
-        Instance saved = instanceService.createInstance(request.getEntityType(), request.getAttributes());
-        return ResponseEntity.ok(InstanceResponse.builder().id(saved.getEntityId()).build());
+    public Map<String, Long> create(
+            @PathVariable("entityName") String entityName,
+            @RequestBody InstanceRequest request
+    ) {
+        Long instanceId = instanceService.createInstance(entityName, request.getAttributes());
+        return Map.of("id", instanceId);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<InstanceResponse> update(@PathVariable("id") Long id,
-            @RequestBody InstanceUpdateRequest request) {
-        Instance saved = instanceService.updateInstance(id, request.getAttributes());
-        return ResponseEntity.ok(InstanceResponse.builder().id(saved.getEntityId()).build());
+    public void update(
+            @PathVariable("entityName") String entityName,
+            @PathVariable("id") Long id,
+            @RequestBody InstanceRequest request
+    ) {
+        instanceService.updateInstance(id, request.getAttributes());
+    }
+
+    @DeleteMapping("/{id}")
+    public void delete(
+            @PathVariable("entityName") String entityName,
+            @PathVariable("id") Long id
+    ) {
+        instanceService.deleteInstance(id);
     }
 }

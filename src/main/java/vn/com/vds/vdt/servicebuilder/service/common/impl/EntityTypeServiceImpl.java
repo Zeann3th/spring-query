@@ -4,7 +4,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import vn.com.vds.vdt.servicebuilder.controller.dto.entityType.EntityTypeCreateRequest;
+import vn.com.vds.vdt.servicebuilder.controller.dto.entityType.CreateEntityTypeRequest;
 import vn.com.vds.vdt.servicebuilder.entity.AttributeDefinition;
 import vn.com.vds.vdt.servicebuilder.entity.EntityType;
 import vn.com.vds.vdt.servicebuilder.repository.AttributeDefinitionRepository;
@@ -12,6 +12,7 @@ import vn.com.vds.vdt.servicebuilder.repository.EntityTypeRepository;
 import vn.com.vds.vdt.servicebuilder.service.common.EntityTypeService;
 
 import java.util.HashMap;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -23,15 +24,22 @@ public class EntityTypeServiceImpl implements EntityTypeService {
 
     @Transactional
     @Override
-    public EntityType createOrUpdate(EntityTypeCreateRequest request) {
+    public EntityType createOrUpdate(CreateEntityTypeRequest request) {
         String name = request.getName().toLowerCase();
-        EntityType entityType = entityTypeRepository.findByName(name)
-                .orElseGet(() -> EntityType.builder()
-                        .name(name)
-                        .displayName(request.getDisplayName())
-                        .isActive(Boolean.TRUE.equals(request.getIsActive()))
-                        .schemaVersion(1L)
-                        .build());
+        Optional<EntityType> optionalEntityType = entityTypeRepository.findByName(name);
+        EntityType entityType = null;
+
+        if (optionalEntityType.isPresent()) {
+            entityType = optionalEntityType.get();
+            entityType.setSchemaVersion(entityType.getSchemaVersion() + 1L);
+        } else {
+            entityType = EntityType.builder()
+                    .name(name)
+                    .displayName(request.getDisplayName())
+                    .isActive(Boolean.TRUE.equals(request.getIsActive()))
+                    .schemaVersion(1L)
+                    .build();
+        }
 
         entityType.setDisplayName(request.getDisplayName());
         entityType.setIsActive(Boolean.TRUE.equals(request.getIsActive()));
@@ -41,9 +49,9 @@ public class EntityTypeServiceImpl implements EntityTypeService {
             for (var attr : request.getAttributes()) {
                 String attrName = attr.getName().toLowerCase();
                 AttributeDefinition def = attributeDefinitionRepository
-                        .findByNameAndEntityType(attrName, savedEntityType)
+                        .findByNameAndEntityTypeId(attrName, savedEntityType.getEntityTypeId())
                         .orElseGet(() -> AttributeDefinition.builder()
-                                .entityType(savedEntityType)
+                                .entityTypeId(savedEntityType.getEntityTypeId())
                                 .name(attrName)
                                 .displayName(attr.getDisplayName())
                                 .dataType(attr.getDataType())

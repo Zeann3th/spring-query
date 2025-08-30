@@ -25,13 +25,11 @@ public class AttributeValue {
     @EqualsAndHashCode.Include
     private Long valueId;
 
-    @ManyToOne
-    @JoinColumn(name = "entity_id", nullable = false)
-    private Instance entity;
+    @Column(name = "entity_id", nullable = false)
+    private Long entityId;
 
-    @ManyToOne
-    @JoinColumn(name = "attribute_definition_id", nullable = false)
-    private AttributeDefinition attributeDefinition;
+    @Column(name = "attribute_definition_id", nullable = false)
+    private Long attributeDefinitionId;
 
     @Column(name = "string_value")
     private String stringValue;

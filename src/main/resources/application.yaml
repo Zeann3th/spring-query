@@ -14,10 +14,10 @@ spring:
         spring.json.trusted.packages: "*"
 
   datasource:
-    url: jdbc:mariadb://127.0.0.1:3306/vdt_query
+    url: jdbc:postgresql://localhost:5432/vdt_query
     username: longlh20
     password: 123123aA@
-    driver-class-name: org.mariadb.jdbc.Driver
+    driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:
@@ -26,7 +26,7 @@ spring:
     properties:
       hibernate:
         format_sql: true
-        dialect: org.hibernate.dialect.MariaDBDialect
+        dialect: org.hibernate.dialect.PostgreSQLDialect
 
   graphql:
     graphiql:
