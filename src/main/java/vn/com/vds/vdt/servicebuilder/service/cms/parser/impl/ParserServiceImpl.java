@@ -6,9 +6,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import vn.com.vds.vdt.servicebuilder.common.constants.ErrorCodes;
 import vn.com.vds.vdt.servicebuilder.controller.dto.parser.ParseSchemaRequest;
-import vn.com.vds.vdt.servicebuilder.exception.CommandException;
-import vn.com.vds.vdt.servicebuilder.service.common.CommonService;
+import vn.com.vds.vdt.servicebuilder.exception.CommandExceptionBuilder;
 import vn.com.vds.vdt.servicebuilder.service.cms.parser.ParserService;
+import vn.com.vds.vdt.servicebuilder.service.common.CommonService;
 
 import java.util.UUID;
 
@@ -30,10 +30,10 @@ public class ParserServiceImpl implements ParserService {
         try {
             schemaParserFactory.getParser(request.getType());
         } catch (IllegalArgumentException e) {
-            throw new CommandException(ErrorCodes.QS00002, e.getMessage());
+            throw CommandExceptionBuilder.exception(ErrorCodes.QS00002, e.getMessage());
         }
         commonService.sendJob(schemaParseTopic, jobId, request);
         log.info("Schema parse job {} enqueued to Kafka", jobId);
-        throw new CommandException(ErrorCodes.QS00001, "Schema parse job queued successfully");
+        throw CommandExceptionBuilder.exception(ErrorCodes.ER0000, "Schema parse job queued successfully");
     }
 }

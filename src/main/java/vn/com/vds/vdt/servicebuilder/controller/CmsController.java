@@ -5,6 +5,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import vn.com.vds.vdt.servicebuilder.common.base.ResponseWrapper;
 import vn.com.vds.vdt.servicebuilder.controller.dto.parser.ParseSchemaRequest;
 import vn.com.vds.vdt.servicebuilder.service.cms.parser.ParserService;
 
@@ -12,6 +13,7 @@ import vn.com.vds.vdt.servicebuilder.service.cms.parser.ParserService;
 @RestController
 @RequestMapping(value = "/api/v1/cms")
 @RequiredArgsConstructor
+@ResponseWrapper
 public class CmsController implements ParserService {
     private final ParserService parserService;
 

@@ -11,7 +11,7 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString
-public class EntityTypeCreateRequest {
+public class CreateEntityTypeRequest {
     private String name;
     private String displayName;
     private Boolean isActive;

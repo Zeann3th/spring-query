@@ -11,7 +11,7 @@ import vn.com.vds.vdt.servicebuilder.controller.dto.parser.ParseSchemaRequest;
 import vn.com.vds.vdt.servicebuilder.entity.AttributeDefinition;
 import vn.com.vds.vdt.servicebuilder.entity.EntityType;
 import vn.com.vds.vdt.servicebuilder.entity.RelationshipType;
-import vn.com.vds.vdt.servicebuilder.exception.CommandException;
+import vn.com.vds.vdt.servicebuilder.exception.CommandExceptionBuilder;
 import vn.com.vds.vdt.servicebuilder.repository.AttributeDefinitionRepository;
 import vn.com.vds.vdt.servicebuilder.repository.EntityTypeRepository;
 import vn.com.vds.vdt.servicebuilder.repository.RelationshipTypeRepository;
@@ -69,7 +69,7 @@ public class JdbcSchemaParser implements SchemaParser {
             }
 
         } catch (SQLException e) {
-            throw new CommandException(ErrorCodes.QS30001,
+            throw CommandExceptionBuilder.exception(ErrorCodes.QS30001,
                     String.format("Failed to read schema from '%s': %s",
                             request.getMetadata().getUrl(), e.getMessage()));
         }
@@ -99,9 +99,9 @@ public class JdbcSchemaParser implements SchemaParser {
                 String mappedDataType = mapSQLType(sqlTypeName);
                 boolean isRequired = (nullable == DatabaseMetaData.columnNoNulls);
 
-                AttributeDefinition attr = attributeDefinitionRepo.findByNameAndEntityType(columnName, entityType)
+                AttributeDefinition attr = attributeDefinitionRepo.findByNameAndEntityTypeId(columnName, entityType.getEntityTypeId())
                         .orElseGet(() -> AttributeDefinition.builder()
-                                .entityType(entityType)
+                                .entityTypeId(entityType.getEntityTypeId())
                                 .name(columnName)
                                 .displayName(ParserUtils.capitalize(columnName))
                                 .dataType(mappedDataType)
@@ -160,11 +160,13 @@ public class JdbcSchemaParser implements SchemaParser {
         String relationshipName = ParserUtils.generateRelationshipName(fromEntity, toEntity, fkName, isReverse);
 
         RelationshipType relationship = relationshipTypeRepo
-                .findByFromEntityTypeAndToEntityType(fromEntity, toEntity)
+                .findByFromEntityTypeIdAndToEntityTypeId(
+                        fromEntity.getEntityTypeId(),
+                        toEntity.getEntityTypeId())
                 .orElseGet(() -> RelationshipType.builder()
                         .name(relationshipName)
-                        .fromEntityType(fromEntity)
-                        .toEntityType(toEntity)
+                        .fromEntityTypeId(fromEntity.getEntityTypeId())
+                        .toEntityTypeId(toEntity.getEntityTypeId())
                         .cardinality(cardinality.getValue())
                         .isRequired(!isReverse)
                         .build()

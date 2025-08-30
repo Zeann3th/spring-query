@@ -10,7 +10,6 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString
-public class InstanceCreateRequest {
-    private String entityType; // entity type name
+public class InstanceRequest {
     private Map<String, Object> attributes;
 }

@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @Getter
 @Setter
@@ -14,6 +15,7 @@ import java.time.LocalDateTime;
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Entity
 @Table(name = "entities")
+@SuppressWarnings("all")
 public class Instance {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -21,9 +23,11 @@ public class Instance {
     @EqualsAndHashCode.Include
     private Long entityId;
 
-    @ManyToOne
-    @JoinColumn(name = "entity_type_id", nullable = false)
-    private EntityType entityType;
+    @Column(name = "entity_type_id", nullable = false)
+    private Long entityTypeId;
+
+    @Transient
+    private Map<String, Object> attributes;
 
     @Column(name = "created_at")
     @Builder.Default
