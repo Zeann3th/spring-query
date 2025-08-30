@@ -4,9 +4,12 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import vn.com.vds.vdt.servicebuilder.common.constants.ErrorCodes;
 import vn.com.vds.vdt.servicebuilder.controller.dto.entityType.CreateEntityTypeRequest;
+import vn.com.vds.vdt.servicebuilder.controller.dto.entityType.UpdateEntityTypeRequest;
 import vn.com.vds.vdt.servicebuilder.entity.AttributeDefinition;
 import vn.com.vds.vdt.servicebuilder.entity.EntityType;
+import vn.com.vds.vdt.servicebuilder.exception.CommandExceptionBuilder;
 import vn.com.vds.vdt.servicebuilder.repository.AttributeDefinitionRepository;
 import vn.com.vds.vdt.servicebuilder.repository.EntityTypeRepository;
 import vn.com.vds.vdt.servicebuilder.service.common.EntityTypeService;
@@ -24,26 +27,54 @@ public class EntityTypeServiceImpl implements EntityTypeService {
 
     @Transactional
     @Override
-    public EntityType createOrUpdate(CreateEntityTypeRequest request) {
+    public EntityType create(CreateEntityTypeRequest request) {
         String name = request.getName().toLowerCase();
         Optional<EntityType> optionalEntityType = entityTypeRepository.findByName(name);
-        EntityType entityType = null;
-
         if (optionalEntityType.isPresent()) {
-            entityType = optionalEntityType.get();
-            entityType.setSchemaVersion(entityType.getSchemaVersion() + 1L);
-        } else {
-            entityType = EntityType.builder()
-                    .name(name)
-                    .displayName(request.getDisplayName())
-                    .isActive(Boolean.TRUE.equals(request.getIsActive()))
-                    .schemaVersion(1L)
-                    .build();
+            throw CommandExceptionBuilder.exception("QS00005", "Entity type name already exists: " + name);
         }
+
+        EntityType entityType = EntityType.builder()
+                .name(name)
+                .displayName(request.getDisplayName())
+                .isActive(Boolean.TRUE.equals(request.getIsActive()))
+                .schemaVersion(1L)
+                .build();
+
+        EntityType savedEntityType = entityTypeRepository.save(entityType);
+
+        if (request.getAttributes() != null) {
+            for (var attr : request.getAttributes()) {
+                String attrName = attr.getName().toLowerCase();
+                AttributeDefinition def = AttributeDefinition.builder()
+                        .entityTypeId(savedEntityType.getEntityTypeId())
+                        .name(attrName)
+                        .displayName(attr.getDisplayName())
+                        .dataType(attr.getDataType())
+                        .isRequired(Boolean.TRUE.equals(attr.getIsRequired()))
+                        .defaultValue(attr.getDefaultValue())
+                        .validationRules(
+                                attr.getValidationRules() != null ? attr.getValidationRules() : new HashMap<>())
+                        .build();
+                attributeDefinitionRepository.save(def);
+            }
+        }
+
+        return savedEntityType;
+    }
+
+    @Transactional
+    @Override
+    public EntityType update(UpdateEntityTypeRequest request) {
+        EntityType entityType = entityTypeRepository.findById(request.getEntityTypeId())
+                .orElseThrow(() -> CommandExceptionBuilder.exception("QS00004",
+                        "Entity type not found: " + request.getEntityTypeId()));
 
         entityType.setDisplayName(request.getDisplayName());
         entityType.setIsActive(Boolean.TRUE.equals(request.getIsActive()));
-        final EntityType savedEntityType = entityTypeRepository.save(entityType);
+        entityType.setSchemaVersion(entityType.getSchemaVersion() + 1L);
+
+        EntityType savedEntityType = entityTypeRepository.save(entityType);
 
         if (request.getAttributes() != null) {
             for (var attr : request.getAttributes()) {
@@ -53,12 +84,6 @@ public class EntityTypeServiceImpl implements EntityTypeService {
                         .orElseGet(() -> AttributeDefinition.builder()
                                 .entityTypeId(savedEntityType.getEntityTypeId())
                                 .name(attrName)
-                                .displayName(attr.getDisplayName())
-                                .dataType(attr.getDataType())
-                                .isRequired(Boolean.TRUE.equals(attr.getIsRequired()))
-                                .defaultValue(attr.getDefaultValue())
-                                .validationRules(
-                                        attr.getValidationRules() != null ? attr.getValidationRules() : new HashMap<>())
                                 .build());
 
                 def.setDisplayName(attr.getDisplayName());
@@ -72,4 +97,12 @@ public class EntityTypeServiceImpl implements EntityTypeService {
 
         return savedEntityType;
     }
+
+    @Override
+    public EntityType getEntityTypeById(Long id) {
+        EntityType entityType = entityTypeRepository.findById(id).orElseThrow(
+                () -> CommandExceptionBuilder.exception(ErrorCodes.QS00004, "Entity type not found: " + id));
+        return entityType;
+    }
+
 }

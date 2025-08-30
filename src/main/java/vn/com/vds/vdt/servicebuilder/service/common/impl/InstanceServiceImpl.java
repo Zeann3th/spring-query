@@ -41,8 +41,7 @@ public class InstanceServiceImpl implements InstanceService {
     public Instance getInstanceById(Long entityId) {
         Instance instance = instanceRepository.findById(entityId)
                 .orElseThrow(() -> CommandExceptionBuilder
-                        .exception(ErrorCodes.QS00004, "Instance not found: " + entityId)
-                );
+                        .exception(ErrorCodes.QS00004, "Instance not found: " + entityId));
         populateAttributes(instance);
         return instance;
     }
@@ -52,8 +51,7 @@ public class InstanceServiceImpl implements InstanceService {
     public Long createInstance(String entityTypeName, Map<String, Object> attributes) {
         EntityType entityType = entityTypeRepository.findByName(entityTypeName.toLowerCase())
                 .orElseThrow(() -> CommandExceptionBuilder
-                        .exception(ErrorCodes.QS00004,"Unknown entity type: " + entityTypeName)
-                );
+                        .exception(ErrorCodes.QS00004, "Unknown entity type: " + entityTypeName));
 
         Instance instance = Instance.builder()
                 .entityTypeId(entityType.getEntityTypeId())
@@ -69,8 +67,7 @@ public class InstanceServiceImpl implements InstanceService {
     public void updateInstance(Long entityId, Map<String, Object> attributes) {
         Instance instance = instanceRepository.findById(entityId)
                 .orElseThrow(() -> CommandExceptionBuilder
-                        .exception(ErrorCodes.QS00004,"Instance not found: " + entityId)
-                );
+                        .exception(ErrorCodes.QS00004, "Instance not found: " + entityId));
         upsertAttributeValues(instance, attributes);
     }
 
@@ -79,8 +76,7 @@ public class InstanceServiceImpl implements InstanceService {
     public void deleteInstance(Long entityId) {
         Instance instance = instanceRepository.findById(entityId)
                 .orElseThrow(() -> CommandExceptionBuilder
-                        .exception(ErrorCodes.QS00004,"Instance not found: " + entityId)
-                );
+                        .exception(ErrorCodes.QS00004, "Instance not found: " + entityId));
 
         attributeValueRepository.deleteByEntityId(entityId);
         relationshipRepository.deleteByEntityId(entityId);
@@ -97,8 +93,8 @@ public class InstanceServiceImpl implements InstanceService {
             AttributeDefinition def = attributeDefinitionRepository
                     .findByNameAndEntityTypeId(attrName, instance.getEntityTypeId())
                     .orElseThrow(() -> CommandExceptionBuilder
-                            .exception(ErrorCodes.QS00004,"Unknown attribute '" + attrName
-                            + "' for entity type id '" + instance.getEntityTypeId() + "'"));
+                            .exception(ErrorCodes.QS00004, "Unknown attribute '" + attrName
+                                    + "' for entity type id '" + instance.getEntityTypeId() + "'"));
 
             AttributeValue attrVal = attributeValueRepository
                     .findByEntityIdAndAttributeDefinitionId(
@@ -169,7 +165,8 @@ public class InstanceServiceImpl implements InstanceService {
                         },
                         av -> {
                             AttributeDefinition def = attrDefMap.get(av.getAttributeDefinitionId());
-                            if (def == null) return null;
+                            if (def == null)
+                                return null;
 
                             DataType type = DataType.valueOf(def.getDataType());
                             return switch (type) {
@@ -181,9 +178,9 @@ public class InstanceServiceImpl implements InstanceService {
                                 case DATE, DATETIME -> av.getDateValue();
                                 default -> av.getStringValue();
                             };
-                        }
-                ));
+                        }));
 
         instance.setAttributes(attributes);
     }
+
 }
