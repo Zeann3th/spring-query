@@ -16,6 +16,11 @@ import vn.com.vds.vdt.servicebuilder.service.cms.parser.ParserService;
 public class CmsController implements ParserService {
     private final ParserService parserService;
 
+    @RequestMapping("/{path:^(?!api).*}")
+    public String forward() {
+        return "forward:/index.html";
+    }
+
     @PostMapping(value = "/v1/cms/migrate")
     public void parse(@RequestBody ParseSchemaRequest request) {
         parserService.parse(request);
