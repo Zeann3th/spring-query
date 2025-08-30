@@ -1,16 +1,16 @@
 services:
-  mariadb:
-    image: mariadb:lts-ubi9
-    container_name: vdt_mariadb
+  postgres:
+    image: postgres:16
+    container_name: vdt_postgres
     environment:
-      MARIADB_ROOT_PASSWORD: 123123aA@
-      MARIADB_DATABASE: vdt_query
-      MARIADB_USER: longlh20
-      MARIADB_PASSWORD: 123123aA@
+      POSTGRES_DB: vdt_query
+      POSTGRES_USER: longlh20
+      POSTGRES_PASSWORD: 123123aA@
+      TZ: "Asia/Ho_Chi_Minh"
     ports:
-      - "3306:3306"
+      - "5432:5432"
     volumes:
-      - mariadb_data:/var/lib/mysql
+      - postgres_data:/var/lib/postgresql/data
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
@@ -37,4 +37,4 @@ services:
       - "9092:9092"
 
 volumes:
-  mariadb_data:
+  postgres_data:

@@ -24,17 +24,14 @@ public class Relationship {
     @EqualsAndHashCode.Include
     private Long relationshipId;
 
-    @ManyToOne
-    @JoinColumn(name = "relationship_type_id", nullable = false)
-    private RelationshipType relationshipType;
+    @Column(name = "relationship_type_id", nullable = false)
+    private Long relationshipTypeId;
 
-    @ManyToOne
-    @JoinColumn(name = "from_entity_id", nullable = false)
-    private Instance fromEntity;
+    @Column(name = "from_entity_id", nullable = false)
+    private Long fromEntityId;
 
-    @ManyToOne
-    @JoinColumn(name = "to_entity_id", nullable = false)
-    private Instance toEntity;
+    @Column(name = "to_entity_id", nullable = false)
+    private Long toEntityId;
 
     @Builder.Default
     @JdbcTypeCode(SqlTypes.JSON)

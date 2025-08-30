@@ -22,13 +22,11 @@ public class RelationshipType {
     @Column(name = "name", nullable = false)
     private String name;
 
-    @ManyToOne
-    @JoinColumn(name = "from_entity_type_id", nullable = false)
-    private EntityType fromEntityType;
+    @Column(name = "from_entity_type_id", nullable = false)
+    private Long fromEntityTypeId;
 
-    @ManyToOne
-    @JoinColumn(name = "to_entity_type_id", nullable = false)
-    private EntityType toEntityType;
+    @Column(name = "to_entity_type_id", nullable = false)
+    private Long toEntityTypeId;
 
     @Column(name = "cardinality", nullable = false)
     private String cardinality;

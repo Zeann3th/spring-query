@@ -4,9 +4,10 @@ package vn.com.vds.vdt.servicebuilder.common.constants;
 public class ErrorCodes {
 
     // ---------------- System / Common ---------------- (QS0xxxx)
-    public static final String QS00001 = "QS00001"; // Success
+    public static final String ER0000 = "0000"; // Success
     public static final String QS00002 = "QS00002"; // Invalid request
     public static final String QS00003 = "QS00003"; // Unknown error
+    public static final String QS00004 = "QS00004"; // Resource not found
     // GAP reserved for future system-level errors: QS00004 ~ QS00050
 
     // ---------------- Validation Errors -------------- (QS1xxxx)

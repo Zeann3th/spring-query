@@ -24,9 +24,8 @@ public class AttributeDefinition {
     @EqualsAndHashCode.Include
     private Long attributeDefinitionId;
 
-    @ManyToOne
-    @JoinColumn(name = "entity_type_id", nullable = false)
-    private EntityType entityType;
+    @Column(name = "entity_type_id", nullable = false)
+    private Long entityTypeId;
 
     @Column(name = "name", nullable = false)
     private String name;

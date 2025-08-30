@@ -2,14 +2,22 @@ package vn.com.vds.vdt.servicebuilder.service.common.impl;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import vn.com.vds.vdt.servicebuilder.common.constants.ErrorCodes;
 import vn.com.vds.vdt.servicebuilder.common.enums.DataType;
-import vn.com.vds.vdt.servicebuilder.entity.*;
+import vn.com.vds.vdt.servicebuilder.entity.AttributeDefinition;
+import vn.com.vds.vdt.servicebuilder.entity.AttributeValue;
+import vn.com.vds.vdt.servicebuilder.entity.EntityType;
+import vn.com.vds.vdt.servicebuilder.entity.Instance;
+import vn.com.vds.vdt.servicebuilder.exception.CommandExceptionBuilder;
 import vn.com.vds.vdt.servicebuilder.repository.*;
 import vn.com.vds.vdt.servicebuilder.service.common.InstanceService;
 
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -20,32 +28,63 @@ public class InstanceServiceImpl implements InstanceService {
     private final InstanceRepository instanceRepository;
     private final AttributeDefinitionRepository attributeDefinitionRepository;
     private final AttributeValueRepository attributeValueRepository;
+    private final RelationshipRepository relationshipRepository;
 
-    @Transactional
     @Override
-    public Instance createInstance(String entityTypeName, Map<String, Object> attributes) {
-        EntityType entityType = entityTypeRepository.findByName(entityTypeName.toLowerCase())
-                .orElseThrow(() -> new IllegalArgumentException("Unknown entity type: " + entityTypeName));
+    public Page<Instance> getInstances(String entityTypeName, Pageable pageable) {
+        Page<Instance> page = instanceRepository.findByEntityTypeName(entityTypeName, pageable);
+        page.forEach(this::populateAttributes);
+        return page;
+    }
 
-        Instance instance = Instance.builder()
-                .entityType(entityType)
-                .build();
-        instance = instanceRepository.save(instance);
-
-        upsertAttributeValues(instance, attributes);
+    @Override
+    public Instance getInstanceById(Long entityId) {
+        Instance instance = instanceRepository.findById(entityId)
+                .orElseThrow(() -> CommandExceptionBuilder
+                        .exception(ErrorCodes.QS00004, "Instance not found: " + entityId)
+                );
+        populateAttributes(instance);
         return instance;
     }
 
     @Transactional
     @Override
-    public Instance updateInstance(Long entityId, Map<String, Object> attributes) {
-        Instance instance = instanceRepository.findById(entityId)
-                .orElseThrow(() -> new IllegalArgumentException("Instance not found: " + entityId));
-        instance.setUpdatedAt(LocalDateTime.now());
-        instanceRepository.save(instance);
+    public Long createInstance(String entityTypeName, Map<String, Object> attributes) {
+        EntityType entityType = entityTypeRepository.findByName(entityTypeName.toLowerCase())
+                .orElseThrow(() -> CommandExceptionBuilder
+                        .exception(ErrorCodes.QS00004,"Unknown entity type: " + entityTypeName)
+                );
+
+        Instance instance = Instance.builder()
+                .entityTypeId(entityType.getEntityTypeId())
+                .build();
+        instance = instanceRepository.save(instance);
 
         upsertAttributeValues(instance, attributes);
-        return instance;
+        return instance.getEntityId();
+    }
+
+    @Transactional
+    @Override
+    public void updateInstance(Long entityId, Map<String, Object> attributes) {
+        Instance instance = instanceRepository.findById(entityId)
+                .orElseThrow(() -> CommandExceptionBuilder
+                        .exception(ErrorCodes.QS00004,"Instance not found: " + entityId)
+                );
+        upsertAttributeValues(instance, attributes);
+    }
+
+    @Transactional
+    @Override
+    public void deleteInstance(Long entityId) {
+        Instance instance = instanceRepository.findById(entityId)
+                .orElseThrow(() -> CommandExceptionBuilder
+                        .exception(ErrorCodes.QS00004,"Instance not found: " + entityId)
+                );
+
+        attributeValueRepository.deleteByEntityId(entityId);
+        relationshipRepository.deleteByEntityId(entityId);
+        instanceRepository.delete(instance);
     }
 
     private void upsertAttributeValues(Instance instance, Map<String, Object> attributes) {
@@ -56,15 +95,18 @@ public class InstanceServiceImpl implements InstanceService {
             Object value = entry.getValue();
 
             AttributeDefinition def = attributeDefinitionRepository
-                    .findByNameAndEntityType(attrName, instance.getEntityType())
-                    .orElseThrow(() -> new IllegalArgumentException("Unknown attribute '" + attrName
-                            + "' for entity type '" + instance.getEntityType().getName() + "'"));
+                    .findByNameAndEntityTypeId(attrName, instance.getEntityTypeId())
+                    .orElseThrow(() -> CommandExceptionBuilder
+                            .exception(ErrorCodes.QS00004,"Unknown attribute '" + attrName
+                            + "' for entity type id '" + instance.getEntityTypeId() + "'"));
 
             AttributeValue attrVal = attributeValueRepository
-                    .findByEntityAndAttributeDefinition(instance, def)
+                    .findByEntityIdAndAttributeDefinitionId(
+                            instance.getEntityId(),
+                            def.getAttributeDefinitionId())
                     .orElseGet(() -> AttributeValue.builder()
-                            .entity(instance)
-                            .attributeDefinition(def)
+                            .entityId(instance.getEntityId())
+                            .attributeDefinitionId(def.getAttributeDefinitionId())
                             .build());
 
             applyTypedValue(attrVal, def.getDataType(), value);
@@ -109,5 +151,39 @@ public class InstanceServiceImpl implements InstanceService {
         if (raw instanceof LocalDateTime dt)
             return dt;
         return LocalDateTime.parse(String.valueOf(raw));
+    }
+
+    private void populateAttributes(Instance instance) {
+        Map<Long, AttributeDefinition> attrDefMap = attributeDefinitionRepository
+                .findByEntityTypeId(instance.getEntityTypeId())
+                .stream()
+                .collect(Collectors.toMap(AttributeDefinition::getAttributeDefinitionId, ad -> ad));
+
+        Map<String, Object> attributes = attributeValueRepository
+                .findByEntityId(instance.getEntityId())
+                .stream()
+                .collect(Collectors.toMap(
+                        av -> {
+                            AttributeDefinition def = attrDefMap.get(av.getAttributeDefinitionId());
+                            return def != null ? def.getName() : "unknown";
+                        },
+                        av -> {
+                            AttributeDefinition def = attrDefMap.get(av.getAttributeDefinitionId());
+                            if (def == null) return null;
+
+                            DataType type = DataType.valueOf(def.getDataType());
+                            return switch (type) {
+                                case STRING, UUID -> av.getStringValue();
+                                case INTEGER -> av.getNumberValue() != null ? av.getNumberValue().intValue() : null;
+                                case LONG -> av.getNumberValue() != null ? av.getNumberValue().longValue() : null;
+                                case DOUBLE -> av.getNumberValue();
+                                case BOOLEAN -> av.getBooleanValue();
+                                case DATE, DATETIME -> av.getDateValue();
+                                default -> av.getStringValue();
+                            };
+                        }
+                ));
+
+        instance.setAttributes(attributes);
     }
 }
