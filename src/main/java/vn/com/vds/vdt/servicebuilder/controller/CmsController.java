@@ -1,6 +1,7 @@
 package vn.com.vds.vdt.servicebuilder.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import vn.com.vds.vdt.servicebuilder.common.base.ResponseWrapper;
@@ -20,7 +21,7 @@ public class CmsController implements ParserService {
         parserService.parse(request);
     }
 
-    @PostMapping(value = "/v2/cms/migrate")
+    @PostMapping(value = "/v2/cms/migrate", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public void parseV2(
             @RequestParam("file") MultipartFile file,
             @RequestParam("type") String type
