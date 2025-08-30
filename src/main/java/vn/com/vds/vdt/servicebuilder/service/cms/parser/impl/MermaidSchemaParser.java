@@ -47,7 +47,9 @@ public class MermaidSchemaParser implements SchemaParser {
     public void parse(ParseSchemaRequest request) {
         try {
             String erdContent = Optional.ofNullable(request.getMetadata().getContent())
-                    .orElseThrow(() -> new IllegalArgumentException("ERD content is required"));
+                    .orElseThrow(() -> CommandExceptionBuilder.exception(
+                            ErrorCodes.QS10001,
+                            "Missing 'content' in metadata"));
 
             erdContent = erdContent.replaceFirst("(?i)\\s*erDiagram\\s*", "");
 
@@ -56,31 +58,42 @@ public class MermaidSchemaParser implements SchemaParser {
 
             for (var entry : entities.entrySet()) {
                 String entityName = entry.getKey().toLowerCase();
-                EntityType entity = entityTypeRepo.findByName(entityName)
-                        .orElseGet(() -> entityTypeRepo.save(EntityType.builder()
-                                .name(entityName)
-                                .displayName(ParserUtils.capitalize(entityName))
-                                .isActive(true)
-                                .schemaVersion(1L)
-                                .build()
-                        ));
+                EntityType entity = entityTypeRepo.findByName(entityName).orElse(null);
+
+                if (entity == null) {
+                    entity = entityTypeRepo.save(EntityType.builder()
+                            .name(entityName)
+                            .displayName(ParserUtils.capitalize(entityName))
+                            .isActive(true)
+                            .schemaVersion(1L)
+                            .build()
+                    );
+                    log.info("Created new entity: {}", entityName);
+                } else {
+                    log.info("Entity {} already exists, skipping creation", entityName);
+                }
                 entityMap.put(entityName, entity);
 
                 for (Attribute attr : entry.getValue()) {
-                    AttributeDefinition def = attributeDefinitionRepo.findByNameAndEntityTypeId(attr.getName(), entity.getEntityTypeId())
-                            .orElseGet(() -> AttributeDefinition.builder()
-                                    .entityTypeId(entity.getEntityTypeId())
-                                    .name(attr.getName())
-                                    .displayName(ParserUtils.capitalize(attr.getName()))
-                                    .dataType(attr.getType())
-                                    .isRequired(false)
-                                    .validationRules(new HashMap<>())
-                                    .build()
-                            );
-                    def.setDataType(attr.getType());
-                    attributeDefinitionRepo.save(def);
+                    AttributeDefinition def = attributeDefinitionRepo
+                            .findByNameAndEntityTypeId(attr.getName(), entity.getEntityTypeId())
+                            .orElse(null);
+
+                    if (def == null) {
+                        attributeDefinitionRepo.save(AttributeDefinition.builder()
+                                .entityTypeId(entity.getEntityTypeId())
+                                .name(attr.getName())
+                                .displayName(ParserUtils.capitalize(attr.getName()))
+                                .dataType(attr.getType())
+                                .isRequired(false)
+                                .validationRules(new HashMap<>())
+                                .build()
+                        );
+                        log.info("Created attribute '{}' for entity '{}'", attr.getName(), entityName);
+                    } else {
+                        log.info("Attribute '{}' for entity '{}' already exists, skipping", attr.getName(), entityName);
+                    }
                 }
-                log.info("Created/updated entity: {}", entityName);
             }
 
             List<Relation> relations = parseRelations(erdContent);
@@ -93,12 +106,8 @@ public class MermaidSchemaParser implements SchemaParser {
                     continue;
                 }
 
-                createOrUpdateRelationship(fromEntity, toEntity, rel, false);
-
-                createOrUpdateRelationship(toEntity, fromEntity, rel, true);
-
-                log.info("Created/updated bidirectional relation: {} {} {}",
-                        rel.getFromEntity(), rel.getType(), rel.getToEntity());
+                createRelationshipIfNotExists(fromEntity, toEntity, rel, false);
+                createRelationshipIfNotExists(toEntity, fromEntity, rel, true);
             }
 
         } catch (Exception e) {
@@ -107,8 +116,8 @@ public class MermaidSchemaParser implements SchemaParser {
         }
     }
 
-    private void createOrUpdateRelationship(EntityType fromEntity, EntityType toEntity,
-                                            Relation relation, boolean isReverse) {
+    private void createRelationshipIfNotExists(EntityType fromEntity, EntityType toEntity,
+                                               Relation relation, boolean isReverse) {
         RelationshipCardinality relationType = mapRelationType(relation.getType());
         String cardinality = isReverse ?
                 RelationshipCardinality.reverse(relationType).getValue() :
@@ -116,28 +125,28 @@ public class MermaidSchemaParser implements SchemaParser {
 
         String relationshipName = ParserUtils.generateRelationshipName(fromEntity, toEntity, relation.getDescription(), isReverse);
 
-        RelationshipType relationship = relationshipTypeRepo
+        boolean exists = relationshipTypeRepo
                 .findByFromEntityTypeIdAndToEntityTypeId(
                         fromEntity.getEntityTypeId(),
                         toEntity.getEntityTypeId())
-                .orElseGet(() -> RelationshipType.builder()
-                        .name(relationshipName)
-                        .fromEntityTypeId(fromEntity.getEntityTypeId())
-                        .toEntityTypeId(toEntity.getEntityTypeId())
-                        .cardinality(cardinality)
-                        .isRequired(!isReverse)
-                        .build()
-                );
+                .isPresent();
 
-        relationship.setCardinality(cardinality);
-        relationship.setName(relationshipName);
-        relationshipTypeRepo.save(relationship);
+        if (exists) {
+            log.info("Relationship {} -> {} already exists, skipping creation",
+                    fromEntity.getName(), toEntity.getName());
+            return;
+        }
 
-        log.debug("Created/updated {} relationship: {} -> {} ({})",
-                isReverse ? "reverse" : "forward",
-                fromEntity.getName(),
-                toEntity.getName(),
-                cardinality);
+        relationshipTypeRepo.save(RelationshipType.builder()
+                .name(relationshipName)
+                .fromEntityTypeId(fromEntity.getEntityTypeId())
+                .toEntityTypeId(toEntity.getEntityTypeId())
+                .cardinality(cardinality)
+                .isRequired(!isReverse)
+                .build()
+        );
+
+        log.info("Created relationship {} -> {} ({})", fromEntity.getName(), toEntity.getName(), cardinality);
     }
 
     private Map<String, List<Attribute>> parseEntities(String content) {

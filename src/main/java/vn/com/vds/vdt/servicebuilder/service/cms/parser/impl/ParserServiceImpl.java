@@ -4,12 +4,15 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import vn.com.vds.vdt.servicebuilder.common.constants.ErrorCodes;
 import vn.com.vds.vdt.servicebuilder.controller.dto.parser.ParseSchemaRequest;
 import vn.com.vds.vdt.servicebuilder.exception.CommandExceptionBuilder;
 import vn.com.vds.vdt.servicebuilder.service.cms.parser.ParserService;
 import vn.com.vds.vdt.servicebuilder.service.common.CommonService;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 @SuppressWarnings("all")
@@ -36,4 +39,21 @@ public class ParserServiceImpl implements ParserService {
         log.info("Schema parse job {} enqueued to Kafka", jobId);
         throw CommandExceptionBuilder.exception(ErrorCodes.ER0000, "Schema parse job queued successfully");
     }
+
+    @Override
+    public void parseV2(MultipartFile file, String type) {
+        try {
+            ParseSchemaRequest request = ParseSchemaRequest.builder()
+                    .type(type)
+                    .metadata(ParseSchemaRequest.Metadata.builder()
+                            .content(new String(file.getBytes(), StandardCharsets.UTF_8))
+                            .build()
+                    )
+                    .build();
+            parse(request);
+        } catch (IOException e) {
+            throw CommandExceptionBuilder.exception(ErrorCodes.QS20001, "Failed to read file content");
+        }
+    }
+
 }

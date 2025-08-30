@@ -47,24 +47,29 @@ public class JdbcSchemaParser implements SchemaParser {
                 request.getMetadata().getUrl(),
                 request.getMetadata().getUsername(),
                 request.getMetadata().getPassword())) {
+
             DatabaseMetaData meta = conn.getMetaData();
 
             try (ResultSet tables = meta.getTables(null, null, "%", new String[]{"TABLE"})) {
                 while (tables.next()) {
                     String tableName = tables.getString("TABLE_NAME").toLowerCase();
-                    EntityType entityType = createOrUpdateEntity(tableName);
-                    parseColumns(meta, entityType, tableName);
-                    log.info("Created/updated entity: {}", tableName);
+                    EntityType entityType = createEntityIfNotExists(tableName);
+                    createColumnsIfNotExists(meta, entityType, tableName);
+                    log.info("Processed entity: {}", tableName);
                 }
             }
 
             try (ResultSet tables = meta.getTables(null, null, "%", new String[]{"TABLE"})) {
                 while (tables.next()) {
                     String tableName = tables.getString("TABLE_NAME").toLowerCase();
-                    EntityType entityType = entityTypeRepo.findByName(tableName).orElse(null);
-                    if (entityType != null) {
-                        parseBidirectionalRelationships(meta, entityType, tableName);
-                    }
+                    entityTypeRepo.findByName(tableName)
+                            .ifPresent(entityType -> {
+                                try {
+                                    createRelationshipsIfNotExists(meta, entityType, tableName);
+                                } catch (SQLException e) {
+                                    throw new RuntimeException(e);
+                                }
+                            });
                 }
             }
 
@@ -75,112 +80,102 @@ public class JdbcSchemaParser implements SchemaParser {
         }
     }
 
-    private EntityType createOrUpdateEntity(String tableName) {
+    private EntityType createEntityIfNotExists(String tableName) {
         return entityTypeRepo.findByName(tableName)
-                .orElseGet(() -> entityTypeRepo.save(
-                        EntityType.builder()
-                                .name(tableName)
-                                .displayName(ParserUtils.capitalize(tableName))
-                                .isActive(true)
-                                .schemaVersion(1L)
-                                .build()
-                ));
+                .orElseGet(() -> {
+                    EntityType newEntity = EntityType.builder()
+                            .name(tableName)
+                            .displayName(ParserUtils.capitalize(tableName))
+                            .isActive(true)
+                            .schemaVersion(1L)
+                            .build();
+                    return entityTypeRepo.save(newEntity);
+                });
     }
 
-    private void parseColumns(DatabaseMetaData meta, EntityType entityType, String tableName) throws SQLException {
+    private void createColumnsIfNotExists(DatabaseMetaData meta, EntityType entityType, String tableName) throws SQLException {
         try (ResultSet columns = meta.getColumns(null, null, tableName, "%")) {
             while (columns.next()) {
                 String columnName = columns.getString("COLUMN_NAME").toLowerCase();
-                String sqlTypeName = columns.getString("TYPE_NAME");
-                int nullable = columns.getInt("NULLABLE");
-                String defaultValue = columns.getString("COLUMN_DEF");
-                int columnSize = columns.getInt("COLUMN_SIZE");
-                int decimalDigits = columns.getInt("DECIMAL_DIGITS");
-                String mappedDataType = mapSQLType(sqlTypeName);
-                boolean isRequired = (nullable == DatabaseMetaData.columnNoNulls);
 
-                AttributeDefinition attr = attributeDefinitionRepo.findByNameAndEntityTypeId(columnName, entityType.getEntityTypeId())
-                        .orElseGet(() -> AttributeDefinition.builder()
-                                .entityTypeId(entityType.getEntityTypeId())
-                                .name(columnName)
-                                .displayName(ParserUtils.capitalize(columnName))
-                                .dataType(mappedDataType)
-                                .isRequired(isRequired)
-                                .defaultValue(defaultValue)
-                                .validationRules(createValidationRules(sqlTypeName, columnSize, decimalDigits))
-                                .build()
-                        );
+                boolean exists = attributeDefinitionRepo
+                        .findByNameAndEntityTypeId(columnName, entityType.getEntityTypeId())
+                        .isPresent();
 
-                attr.setDataType(mappedDataType);
-                attr.setIsRequired(isRequired);
-                attr.setDefaultValue(defaultValue);
-                attr.setValidationRules(createValidationRules(sqlTypeName, columnSize, decimalDigits));
-                attributeDefinitionRepo.save(attr);
+                if (!exists) {
+                    String sqlTypeName = columns.getString("TYPE_NAME");
+                    int nullable = columns.getInt("NULLABLE");
+                    String defaultValue = columns.getString("COLUMN_DEF");
+                    int columnSize = columns.getInt("COLUMN_SIZE");
+                    int decimalDigits = columns.getInt("DECIMAL_DIGITS");
+                    String mappedDataType = mapSQLType(sqlTypeName);
+                    boolean isRequired = (nullable == DatabaseMetaData.columnNoNulls);
+
+                    AttributeDefinition attr = AttributeDefinition.builder()
+                            .entityTypeId(entityType.getEntityTypeId())
+                            .name(columnName)
+                            .displayName(ParserUtils.capitalize(columnName))
+                            .dataType(mappedDataType)
+                            .isRequired(isRequired)
+                            .defaultValue(defaultValue)
+                            .validationRules(createValidationRules(sqlTypeName, columnSize, decimalDigits))
+                            .build();
+
+                    attributeDefinitionRepo.save(attr);
+                    log.info("Created new attribute '{}' for entity '{}'", columnName, entityType.getName());
+                }
             }
         }
     }
 
-    private void parseBidirectionalRelationships(DatabaseMetaData meta, EntityType fromEntity, String tableName) throws SQLException {
+    private void createRelationshipsIfNotExists(DatabaseMetaData meta, EntityType fromEntity, String tableName) throws SQLException {
         try (ResultSet foreignKeys = meta.getImportedKeys(null, null, tableName)) {
             while (foreignKeys.next()) {
                 String pkTableName = foreignKeys.getString("PKTABLE_NAME").toLowerCase();
                 String fkName = foreignKeys.getString("FK_NAME");
                 String fkColumn = foreignKeys.getString("FKCOLUMN_NAME");
 
-                EntityType toEntity = entityTypeRepo.findByName(pkTableName)
-                        .orElseGet(() -> createOrUpdateEntity(pkTableName));
+                EntityType toEntity = createEntityIfNotExists(pkTableName);
 
-                RelationshipCardinality forwardCardinality = isUnique(meta, tableName, fkColumn) ?
-                        RelationshipCardinality.ONE_TO_ONE :
-                        RelationshipCardinality.MANY_TO_ONE;
+                RelationshipCardinality forwardCardinality = isUnique(meta, tableName, fkColumn)
+                        ? RelationshipCardinality.ONE_TO_ONE
+                        : RelationshipCardinality.MANY_TO_ONE;
 
-                createOrUpdateRelationship(
-                        fromEntity,
-                        toEntity,
-                        fkName,
-                        forwardCardinality,
-                        false);
+                createRelationshipIfNotExists(fromEntity, toEntity, fkName, forwardCardinality, false);
+                createRelationshipIfNotExists(toEntity, fromEntity, fkName, RelationshipCardinality.reverse(forwardCardinality), true);
 
-                createOrUpdateRelationship(
-                        toEntity,
-                        fromEntity,
-                        fkName,
-                        RelationshipCardinality.reverse(forwardCardinality),
-                        true);
-
-                log.info("Created/updated bidirectional relationship: {} {} {}",
-                        fromEntity.getName(), forwardCardinality, toEntity.getName());
+                log.info("Created bidirectional relationship: {} {} {}", fromEntity.getName(), forwardCardinality, toEntity.getName());
             }
         }
     }
 
-    private void createOrUpdateRelationship(EntityType fromEntity, EntityType toEntity,
-                                            String fkName, RelationshipCardinality cardinality,
-                                            boolean isReverse) {
-        String relationshipName = ParserUtils.generateRelationshipName(fromEntity, toEntity, fkName, isReverse);
-
-        RelationshipType relationship = relationshipTypeRepo
+    private void createRelationshipIfNotExists(EntityType fromEntity, EntityType toEntity,
+                                               String fkName, RelationshipCardinality cardinality,
+                                               boolean isReverse) {
+        boolean exists = relationshipTypeRepo
                 .findByFromEntityTypeIdAndToEntityTypeId(
                         fromEntity.getEntityTypeId(),
                         toEntity.getEntityTypeId())
-                .orElseGet(() -> RelationshipType.builder()
-                        .name(relationshipName)
-                        .fromEntityTypeId(fromEntity.getEntityTypeId())
-                        .toEntityTypeId(toEntity.getEntityTypeId())
-                        .cardinality(cardinality.getValue())
-                        .isRequired(!isReverse)
-                        .build()
-                );
+                .isPresent();
 
-        relationship.setCardinality(cardinality.getValue());
-        relationship.setName(relationshipName);
-        relationshipTypeRepo.save(relationship);
+        if (!exists) {
+            String relationshipName = ParserUtils.generateRelationshipName(fromEntity, toEntity, fkName, isReverse);
 
-        log.debug("Created/updated {} relationship: {} -> {} ({})",
-                isReverse ? "reverse" : "forward",
-                fromEntity.getName(),
-                toEntity.getName(),
-                cardinality);
+            RelationshipType relationship = RelationshipType.builder()
+                    .name(relationshipName)
+                    .fromEntityTypeId(fromEntity.getEntityTypeId())
+                    .toEntityTypeId(toEntity.getEntityTypeId())
+                    .cardinality(cardinality.getValue())
+                    .isRequired(!isReverse)
+                    .build();
+
+            relationshipTypeRepo.save(relationship);
+            log.info("Created {} relationship: {} -> {} ({})",
+                    isReverse ? "reverse" : "forward",
+                    fromEntity.getName(),
+                    toEntity.getName(),
+                    cardinality);
+        }
     }
 
     private boolean isUnique(DatabaseMetaData meta, String tableName, String columnName) throws SQLException {
